@@ -527,7 +527,7 @@ fn MessageBusType(comptime process_type: vsr.ProcessType) type {
                 completion: *IO.Completion,
                 result: IO.TimeoutError!void,
             ) void {
-                const connection = @fieldParentPtr(Connection, "recv_completion", completion);
+                const connection: *Connection = @fieldParentPtr("recv_completion", completion);
                 assert(connection.recv_submitted);
                 connection.recv_submitted = false;
                 if (connection.state == .terminating) {
@@ -558,7 +558,7 @@ fn MessageBusType(comptime process_type: vsr.ProcessType) type {
                 completion: *IO.Completion,
                 result: IO.ConnectError!void,
             ) void {
-                const connection = @fieldParentPtr(Connection, "recv_completion", completion);
+                const connection: *Connection = @fieldParentPtr("recv_completion", completion);
                 assert(connection.recv_submitted);
                 connection.recv_submitted = false;
 
@@ -944,7 +944,7 @@ fn MessageBusType(comptime process_type: vsr.ProcessType) type {
             }
 
             fn on_recv(bus: *Self, completion: *IO.Completion, result: IO.RecvError!usize) void {
-                const connection = @fieldParentPtr(Connection, "recv_completion", completion);
+                const connection: *Connection = @fieldParentPtr("recv_completion", completion);
                 assert(connection.recv_submitted);
                 connection.recv_submitted = false;
                 if (connection.state == .terminating) {
@@ -986,7 +986,7 @@ fn MessageBusType(comptime process_type: vsr.ProcessType) type {
             }
 
             fn on_send(bus: *Self, completion: *IO.Completion, result: IO.SendError!usize) void {
-                const connection = @fieldParentPtr(Connection, "send_completion", completion);
+                const connection: *Connection = @fieldParentPtr("send_completion", completion);
                 assert(connection.send_submitted);
                 connection.send_submitted = false;
                 assert(connection.peer == .client or connection.peer == .replica);
@@ -1039,7 +1039,7 @@ fn MessageBusType(comptime process_type: vsr.ProcessType) type {
             }
 
             fn on_close(bus: *Self, completion: *IO.Completion, result: IO.CloseError!void) void {
-                const connection = @fieldParentPtr(Connection, "send_completion", completion);
+                const connection: *Connection = @fieldParentPtr("send_completion", completion);
                 assert(connection.send_submitted);
                 assert(connection.recv_submitted);
 

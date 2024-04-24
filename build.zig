@@ -1032,7 +1032,7 @@ const FailStep = struct {
     }
 
     fn make(step: *std.Build.Step, _: *std.Progress.Node) anyerror!void {
-        const self = @fieldParentPtr(FailStep, "step", step);
+        const self: *FailStep = @fieldParentPtr("step", step);
         std.log.err("{s}", .{self.message});
         return error.FailStep;
     }
@@ -1057,7 +1057,7 @@ const ShellcheckStep = struct {
     }
 
     fn make(step: *std.Build.Step, _: *std.Progress.Node) anyerror!void {
-        const self = @fieldParentPtr(ShellcheckStep, "step", step);
+        const self: *ShellcheckStep = @fieldParentPtr("step", step);
 
         var shell = try Shell.create(self.gpa);
         defer shell.destroy();
@@ -1109,7 +1109,7 @@ const GitCloneStep = struct {
     }
 
     fn make(step: *std.Build.Step, _: *std.Progress.Node) anyerror!void {
-        const self = @fieldParentPtr(GitCloneStep, "step", step);
+        const self: *GitCloneStep = @fieldParentPtr("step", step);
 
         var shell = try Shell.create(self.gpa);
         defer shell.destroy();

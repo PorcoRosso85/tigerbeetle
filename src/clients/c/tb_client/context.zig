@@ -268,7 +268,7 @@ pub fn ContextType(
         }
 
         fn on_signal(signal: *Signal) void {
-            const self = @fieldParentPtr(Context, "signal", signal);
+            const self: *Context = @fieldParentPtr("signal", signal);
             while (self.submitted.pop()) |packet| {
                 self.request(packet);
             }
@@ -429,7 +429,7 @@ pub fn ContextType(
         }
 
         inline fn get_context(implementation: *ContextImplementation) *Context {
-            return @fieldParentPtr(Context, "implementation", implementation);
+            return @fieldParentPtr("implementation", implementation);
         }
 
         fn on_acquire_packet(implementation: *ContextImplementation, out_packet: *?*Packet) PacketAcquireStatus {
