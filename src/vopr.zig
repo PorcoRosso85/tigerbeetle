@@ -360,7 +360,7 @@ fn create_report(allocator: mem.Allocator, bug: Bug, seed: u64) Report {
     };
 
     // Zig stores value as Little Endian when VOPR Hub is expecting Big Endian.
-    assert(@import("builtin").target.cpu.arch.endian() == .Little);
+    assert(@import("builtin").target.cpu.arch.endian() == .little);
 
     var message = Report{
         .checksum = undefined,
@@ -381,7 +381,7 @@ fn create_report(allocator: mem.Allocator, bug: Bug, seed: u64) Report {
 fn fatal(comptime fmt_string: []const u8, args: anytype) noreturn {
     const stderr = std.io.getStdErr().writer();
     stderr.print("error: " ++ fmt_string ++ "\n", args) catch {};
-    os.exit(1);
+    std.posix.exit(1);
 }
 
 /// Parse e.g. `--seed=123` into 123 with error handling.
@@ -452,8 +452,8 @@ fn parse_args(allocator: mem.Allocator) !Flags {
                 ),
             };
         } else if (mem.eql(u8, arg, "-h") or mem.eql(u8, arg, "--help")) {
-            std.io.getStdOut().writeAll(usage) catch os.exit(1);
-            os.exit(0);
+            std.io.getStdOut().writeAll(usage) catch std.posix.exit(1);
+            std.posix.exit(0);
         } else if (mem.startsWith(u8, arg, "--")) {
             fatal("unexpected argument: '{s}'", .{arg});
         } else {

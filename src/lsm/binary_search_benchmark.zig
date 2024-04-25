@@ -164,10 +164,10 @@ const perf_counters = [_]PERF.COUNT.HW{
 const Benchmark = struct {
     timer: std.time.Timer,
     rusage: std.os.rusage,
-    perf_fds: [perf_counters.len]std.os.fd_t,
+    perf_fds: [perf_counters.len]std.posix.fd_t,
 
     fn begin() !Benchmark {
-        var perf_fds = [1]std.os.fd_t{-1} ** perf_counters.len;
+        var perf_fds = [1]std.posix.fd_t{-1} ** perf_counters.len;
         for (perf_counters, 0..) |counter, i| {
             var attr: std.os.linux.perf_event_attr = .{
                 .type = PERF.TYPE.HARDWARE,
@@ -196,7 +196,7 @@ const Benchmark = struct {
     fn end(self: *Benchmark, samples: usize) !BenchmarkResult {
         defer {
             for (perf_counters, 0..) |_, i| {
-                std.os.close(self.perf_fds[i]);
+                std.posix.close(self.perf_fds[i]);
                 self.perf_fds[i] = -1;
             }
         }
@@ -230,9 +230,9 @@ fn timeval_to_ns(tv: std.os.timeval) u64 {
         @as(u64, @bitCast(tv.tv_usec)) * ns_per_us;
 }
 
-fn readPerfFd(fd: std.os.fd_t) !usize {
+fn readPerfFd(fd: std.posix.fd_t) !usize {
     var result: usize = 0;
-    const n = try std.os.read(fd, std.mem.asBytes(&result));
+    const n = try std.std.posix.read(fd, std.mem.asBytes(&result));
     assert(n == @sizeOf(usize));
 
     return result;
