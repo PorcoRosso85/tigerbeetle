@@ -543,7 +543,7 @@ pub fn exec_raw(
     var buffer: [std.fs.MAX_PATH_BYTES]u8 = undefined;
     const cwd_path = try shell.cwd.realpath(".", &buffer);
 
-    return try std.ChildProcess.exec(.{
+    return try std.ChildProcess.run(.{
         .allocator = shell.arena.allocator(),
         .argv = argv.slice(),
         .cwd = cwd_path,

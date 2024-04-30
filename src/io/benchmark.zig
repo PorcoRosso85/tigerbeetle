@@ -45,18 +45,18 @@ pub fn main() !void {
     }
 
     // Setup the server socket
-    self.server.fd = try self.io.open_socket(os.AF.INET, os.SOCK.STREAM, os.IPPROTO.TCP);
+    self.server.fd = try self.io.open_socket(std.posix.AF.INET, std.posix.SOCK.STREAM, std.posix.IPPROTO.TCP);
     defer self.io.close_socket(self.server.fd);
 
     const address = try std.net.Address.parseIp4("127.0.0.1", 3131);
-    try os.setsockopt(
+    try std.posix.setsockopt(
         self.server.fd,
-        os.SOL.SOCKET,
-        os.SO.REUSEADDR,
+        std.posix.SOL.SOCKET,
+        std.posix.SO.REUSEADDR,
         &std.mem.toBytes(@as(c_int, 1)),
     );
-    try os.bind(self.server.fd, &address.any, address.getOsSockLen());
-    try os.listen(self.server.fd, 1);
+    try std.posix.bind(self.server.fd, &address.any, address.getOsSockLen());
+    try std.posix.listen(self.server.fd, 1);
 
     // Start accepting the client
     self.io.accept(
@@ -68,7 +68,7 @@ pub fn main() !void {
     );
 
     // Setup the client connection
-    self.tx.socket.fd = try self.io.open_socket(os.AF.INET, os.SOCK.STREAM, os.IPPROTO.TCP);
+    self.tx.socket.fd = try self.io.open_socket(std.posix.AF.INET, std.posix.SOCK.STREAM, std.posix.IPPROTO.TCP);
     defer self.io.close_socket(self.tx.socket.fd);
 
     self.io.connect(

@@ -359,7 +359,7 @@ pub fn JournalType(comptime Replica: type, comptime Storage: type) type {
         }
 
         pub fn deinit(journal: *Journal, allocator: Allocator) void {
-            const replica: *Replica = @fieldParentPtr("journal", journal);
+            const replica: *Replica = @alignCast(@fieldParentPtr("journal", journal));
 
             journal.dirty.deinit(allocator);
             journal.faulty.deinit(allocator);
@@ -729,7 +729,7 @@ pub fn JournalType(comptime Replica: type, comptime Storage: type) type {
                 assert(journal.reads.available() > 0);
             }
 
-            const replica: *Replica = @fieldParentPtr("journal", journal);
+            const replica: *Replica = @alignCast(@fieldParentPtr("journal", journal));
             if (op > replica.op) {
                 journal.read_prepare_log(op, checksum, "beyond replica.op");
                 callback(replica, null, null);
@@ -764,7 +764,7 @@ pub fn JournalType(comptime Replica: type, comptime Storage: type) type {
             checksum: u128,
             destination_replica: ?u8,
         ) void {
-            const replica: *Replica = @fieldParentPtr("journal", journal);
+            const replica: *Replica = @alignCast(@fieldParentPtr("journal", journal));
             const slot = journal.slot_for_op(op);
             assert(journal.status == .recovered);
             assert(journal.prepare_inhabited[slot.index]);
@@ -837,9 +837,9 @@ pub fn JournalType(comptime Replica: type, comptime Storage: type) type {
         }
 
         fn read_prepare_with_op_and_checksum_callback(completion: *Storage.Read) void {
-            const read: *Journal.Read = @fieldParentPtr("completion", completion);
+            const read: *Journal.Read = @alignCast(@fieldParentPtr("completion", completion));
             const journal = read.journal;
-            const replica: *Replica = @fieldParentPtr("journal", journal);
+            const replica: *Replica = @alignCast(@fieldParentPtr("journal", journal));
             const op = read.op;
             const callback = read.callback;
             const checksum = read.checksum;
@@ -972,7 +972,7 @@ pub fn JournalType(comptime Replica: type, comptime Storage: type) type {
         }
 
         fn recover_headers(journal: *Journal) void {
-            const replica: *Replica = @fieldParentPtr("journal", journal);
+            const replica: *Replica = @alignCast(@fieldParentPtr("journal", journal));
             assert(journal.status == .recovering);
             assert(journal.reads.available() > 0);
 
@@ -1649,7 +1649,7 @@ pub fn JournalType(comptime Replica: type, comptime Storage: type) type {
         }
 
         pub fn remove_entry(journal: *Journal, slot: Slot) void {
-            const replica: *Replica = @fieldParentPtr("journal", journal);
+            const replica: *Replica = @alignCast(@fieldParentPtr("journal", journal));
 
             const reserved = Header.Prepare.reserved(replica.cluster, slot.index);
             journal.headers[slot.index] = reserved;
@@ -1723,7 +1723,7 @@ pub fn JournalType(comptime Replica: type, comptime Storage: type) type {
             message: *Message.Prepare,
             trigger: Journal.Write.Trigger,
         ) void {
-            const replica: *Replica = @fieldParentPtr("journal", journal);
+            const replica: *Replica = @alignCast(@fieldParentPtr("journal", journal));
 
             assert(journal.status == .recovered);
             assert(message.header.command == .prepare);
@@ -1920,7 +1920,7 @@ pub fn JournalType(comptime Replica: type, comptime Storage: type) type {
             write: *Journal.Write,
             wrote: ?*Message.Prepare,
         ) void {
-            const replica: *Replica = @fieldParentPtr("journal", journal);
+            const replica: *Replica = @alignCast(@fieldParentPtr("journal", journal));
             const write_callback = write.callback;
             const write_trigger = write.trigger;
             const write_message = write.message;
@@ -2069,7 +2069,7 @@ pub fn JournalType(comptime Replica: type, comptime Storage: type) type {
             assert(journal.writes.items.len == journal.headers_iops.len);
             assert(sector_index < @divFloor(slot_count, headers_per_sector));
 
-            const replica: *Replica = @fieldParentPtr("journal", journal);
+            const replica: *const Replica = @alignCast(@fieldParentPtr("journal", journal));
             const sector_slot = Slot{ .index = sector_index * headers_per_sector };
             assert(sector_slot.index < slot_count);
 

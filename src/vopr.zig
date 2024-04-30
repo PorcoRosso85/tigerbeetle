@@ -143,7 +143,7 @@ fn build_simulator(
         else => unreachable,
     };
 
-    const exec_result = std.ChildProcess.exec(.{
+    const exec_result = std.ChildProcess.run(.{
         .allocator = allocator,
         .argv = &.{ "zig/zig", "build", "simulator", mode_str },
     }) catch |err| {
@@ -252,7 +252,7 @@ fn run_child_process(allocator: mem.Allocator, argv: []const []const u8) u8 {
 fn check_git_status(allocator: mem.Allocator) void {
     // Running git status to determine whether there is any uncommitted code or local changes.
     var args = [2][]const u8{ "git", "status" };
-    var exec_result = std.ChildProcess.exec(.{
+    var exec_result = std.ChildProcess.run(.{
         .allocator = allocator,
         .argv = &args,
     }) catch |err| {
@@ -341,7 +341,7 @@ fn create_report(allocator: mem.Allocator, bug: Bug, seed: u64) Report {
 
     // Running git log to extract the current TigerBeetle git commit hash from stdout.
     var args = [3][]const u8{ "git", "log", "-1" };
-    var exec_result = std.ChildProcess.exec(.{
+    var exec_result = std.ChildProcess.run(.{
         .allocator = allocator,
         .argv = &args,
     }) catch |err| {

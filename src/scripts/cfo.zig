@@ -176,10 +176,10 @@ fn run_fuzzers(
                         "../zig/zig build -Drelease fuzz -- --seed={seed} {fuzzer}",
                         .{ .seed = try shell.print("{d}", .{seed}), .fuzzer = @tagName(fuzzer) },
                     );
-                    _ = try std.os.fcntl(
+                    _ = try std.posix.fcntl(
                         child.stdin.?.handle,
                         std.os.F.SETFD,
-                        @as(u32, std.os.O.NONBLOCK),
+                        @as(u32, @bitCast(std.posix.O{ .NONBLOCK = true })),
                     );
                     fuzzer_or_null.* = .{ .seed = seed_record, .child = child };
                 }

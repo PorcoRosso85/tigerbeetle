@@ -30,7 +30,7 @@ pub fn main() !void {
     std.log.info("BM: branch misses/search", .{});
 
     var seed: u64 = undefined;
-    try std.os.getrandom(std.mem.asBytes(&seed));
+    try std.posix.getrandom(std.mem.asBytes(&seed));
     var prng = std.rand.DefaultPrng.init(seed);
 
     // Allocate on the heap just once.
@@ -188,7 +188,7 @@ const Benchmark = struct {
         return Benchmark{
             .timer = timer,
             // TODO pass std.os.linux.rusage.SELF once Zig is upgraded
-            .rusage = std.os.getrusage(0),
+            .rusage = std.posix.getrusage(0),
             .perf_fds = perf_fds,
         };
     }
@@ -201,7 +201,7 @@ const Benchmark = struct {
             }
         }
 
-        const rusage = std.os.getrusage(0);
+        const rusage = std.posix.getrusage(0);
         const err = std.os.linux.ioctl(self.perf_fds[0], PERF.EVENT_IOC.DISABLE, PERF.IOC_FLAG_GROUP);
         if (err == -1) return error.Unexpected;
         return BenchmarkResult{
@@ -232,7 +232,7 @@ fn timeval_to_ns(tv: std.os.timeval) u64 {
 
 fn readPerfFd(fd: std.posix.fd_t) !usize {
     var result: usize = 0;
-    const n = try std.std.posix.read(fd, std.mem.asBytes(&result));
+    const n = try std.posix.read(fd, std.mem.asBytes(&result));
     assert(n == @sizeOf(usize));
 
     return result;
