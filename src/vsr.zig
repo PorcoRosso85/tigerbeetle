@@ -138,6 +138,9 @@ pub const ReleaseTriple = extern struct {
 };
 
 test "ReleaseTriple.parse" {
+    // 文字列パーステスト
+    // 有効なリリースバージョン文字列
+    // 無効な文字や区切り文字、オーバーフローするバージョン番号などのエラーケースをテスト
     const tests = [_]struct {
         string: []const u8,
         result: error{InvalidRelease}!ReleaseTriple,
@@ -566,6 +569,9 @@ pub const ReconfigurationResult = enum(u32) {
 };
 
 test "ReconfigurationRequest" {
+    // 検証ロジックをテスト
+    // クラスタ再設定リクエストの検証ロジック
+    // メンバー数やエポック番号など各種パラメータを変化させている
     const ResultSet = std.EnumSet(ReconfigurationResult);
 
     const Test = struct {
@@ -831,6 +837,8 @@ pub fn exponential_backoff_with_jitter(
 }
 
 test "exponential_backoff_with_jitter" {
+    // 待ち時間計算のテスト
+    // 指数バックオフとジッターを使って, 計算結果が指定の範囲内に収まるかどうかを確認する
     var prng = std.rand.DefaultPrng.init(0);
     const random = prng.random();
 
@@ -912,6 +920,9 @@ fn parse_address(string: []const u8, port: u16) !std.net.Address {
 }
 
 test "parse_addresses" {
+    // 文字列表現をパースする関数のテスト
+    // 有効なipv4/ipv6アドレスとポート番号の組み合わせが正しくパースできているか
+    // 無効なアドレスの場合のエラーケースが正しいか
     const vectors_positive = &[_]struct {
         raw: []const u8,
         addresses: []const std.net.Address,
@@ -1017,6 +1028,9 @@ test "parse_addresses" {
 }
 
 test "parse_addresses: fuzz" {
+    // 文字列表現をパースする関数のテスト
+    // 有効なipv4/ipv6アドレスとポート番号の組み合わせが正しくパースできているか
+    // 無効なアドレスの場合のエラーケースが正しいか
     const test_count = 1024;
     const len_max = 32;
     const alphabet = " \t\n,:[]0123456789abcdefgABCDEFGXx";
@@ -1110,6 +1124,8 @@ pub fn quorums(replica_count: u8) struct {
 }
 
 test "quorums" {
+    // レプリカ数に応じて各種クォーラム値が計算されることをテスト
+    // クォーラム値： replecation, view_change, nack_prepare, majority
     if (constants.quorum_replication_max != 3) return error.SkipZigTest;
 
     const expect_replication = [_]u8{ 1, 2, 2, 2, 3, 3, 3, 3 };
@@ -1381,6 +1397,10 @@ const ViewChangeHeadersSlice = struct {
 };
 
 test "Headers.ViewChangeSlice.view_for_op" {
+    // 適切なviewの範囲を返す関数をテスト
+    // 特定のopに対して適切なviewの範囲が返されるか
+    // ビューチェンジヘッダのスライスから適切な範囲を取得する
+    // ヘッダーの配列とopの値を変えて、期待する範囲が返されるかを確認
     var headers_array = [_]Header.Prepare{
         std.mem.zeroInit(Header.Prepare, .{
             .checksum = undefined,
