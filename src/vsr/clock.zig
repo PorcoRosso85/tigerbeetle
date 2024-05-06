@@ -564,6 +564,10 @@ const ClockUnitTestContainer = struct {
 };
 
 test "ideal clocks get clamped to cluster time" {
+    // 期待されるオフセットが実際のオフセットと一致することを確認する
+    // 3つの異なるタイプの理想的なクロックをテスト
+    // 定数ドリフトクロック、周期的ドリフトクロック、ジャンプクロック
+    // これによりクロックが正しくドリフトまたはジャンプしていることをテスト
     // Silence all clock logs.
     const level = std.testing.log_level;
     std.testing.log_level = std.log.Level.err;
@@ -777,6 +781,10 @@ const ClockSimulator = struct {
 };
 
 test "clock: fuzz test" {
+    // 複数のクロックが同期を保てるか確認する
+    // 3クロックがそれぞれ異なる時間でティックする
+    // どれだけの同期なしで進行したかの記録も行う
+    // ネットワークの遅延、パケットロス、パスの最大容量、パスの混雑、パケットの再送信をシミュレートする
     // Silence all clock logs.
     const level = std.testing.log_level;
     std.testing.log_level = std.log.Level.err;

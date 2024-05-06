@@ -572,6 +572,9 @@ fn bit_set_masks(bit_set: DynamicBitSetUnmanaged) []MaskInt {
 }
 
 test "FreeSet block shard count" {
+    // FreeSetが正しく動作することを確認する。
+    // 異なるブロック数とshard数の組み合わせで、FreeSetが正しく動作することを確認する。
+    // FreeSetは、1つのshardに512*8=4096ブロックを格納できる。おそらく「データ集合を管理するデータ構造」のこと。
     if (constants.block_size != 64 * 1024) return;
     const blocks_in_tb = @divExact(1 << 40, constants.block_size);
     try test_block_shards_count(5120 * 8, 10 * blocks_in_tb);
@@ -587,6 +590,13 @@ fn test_block_shards_count(expect_shards_count: usize, blocks_count: usize) !voi
 }
 
 test "FreeSet highest_address_acquired" {
+    // FreeSet.highest_address_acquired()が正しく動作することを確認する。
+    // メソッドが常に最高のアドレスを返すことを確認する。
+    // 6つのブロックを予約します。この時点ではまだアドレスは取得していないので、highest_address_acquired は null を返します。
+    // 予約したブロックから3つのアドレスを取得します。取得するたびに、highest_address_acquired は最後に取得したアドレスを返します。
+    // すべてのアドレスをリリースします。リリースするたびに、highest_address_acquired はまだリリースされていない最高のアドレスを返します。すべてリリースした後は、再び null を返します。
+    // 再度6つのブロックを予約し、3つのアドレスを取得します。
+    // ステージングを含めてリリースし、チェックポイントを作成します。これらの操作は、highest_address_acquired の値に影響を与えます。
     const expectEqual = std.testing.expectEqual;
     const blocks_count = FreeSet.shard_bits;
     var set = try FreeSet.open_empty(std.testing.allocator, blocks_count);
@@ -634,6 +644,10 @@ test "FreeSet highest_address_acquired" {
 }
 
 test "FreeSet acquire/release" {
+    // FreeSet.acquire/release()が正しく動作することを確認する。
+    // test_acquire_release() は特定のシャード数での acquire/release の動作をテストします。
+    // アドレスを取得し、期待される範囲内であることを確認し、アドレスをリリースします。
+    // x63, x64, x65 のブロック数/シャード数でテストします。
     try test_acquire_release(FreeSet.shard_bits);
     try test_acquire_release(2 * FreeSet.shard_bits);
     try test_acquire_release(63 * FreeSet.shard_bits);
@@ -686,6 +700,13 @@ fn test_acquire_release(blocks_count: usize) !void {
 }
 
 test "FreeSet.reserve/acquire" {
+    // FreeSet を空の状態で開きます。これは、最初に利用可能なブロック数が blocks_count_total であることを意味します。
+    // 最初に、blocks_count_total + 1 の数のブロックを予約しようとします。これは失敗するはずです（null を返す）。
+    // 次に、blocks_count_total - 1 の数のブロックを予約し、さらに1つのブロックを予約します。これにより、すべてのブロックが予約されます。
+    // さらに1つのブロックを予約しようとすると、これは失敗するはずです（null を返す）。
+    // 予約したブロックを放棄（forfeit）します。
+    // 2つのブロックを予約し、それらを取得（acquire）します。取得するたびに、取得したアドレスが期待される値であることを確認します。
+    // さらに2つのブロックを予約し、それらを取得します。このとき、2つの異なる予約からブロックを取得します。取得するたびに、取得したアドレスが期待される値であることを確認します。
     const blocks_count_total = 4096;
     var set = try FreeSet.open_empty(std.testing.allocator, blocks_count_total);
     defer set.deinit(std.testing.allocator);
@@ -727,6 +748,16 @@ test "FreeSet.reserve/acquire" {
 }
 
 test "FreeSet checkpoint" {
+    // FreeSet.checkpoint()はステージングされたブロックを解放し、次のチェックポイントで解放されるブロックをマークします。
+    // ステージングされた＝解放することが決定されたが、まだ解放されていないブロック
+    // FreeSet を空の状態で開きます。
+    // 空の状態＝最初に利用可能なブロック数が blocks_count であることを意味
+    // すべてのブロックを予約し、それらを取得します。取得するたびに、取得したアドレスが期待される値であることを確認します。
+    // すべてのブロックをステージングリリースします。解放予定であり、未解放
+    // この時点では、count_acquired メソッドはすべてのブロックが取得されていることを報告し、count_free メソッドはブロックがないことを報告します。
+    // checkpoint メソッドを呼び出します。これにより、ステージングされたすべてのブロックが解放されます。この後、FreeSet は再び空になります。
+    // 再度すべてのブロックを予約し、それらを取得し、ステージングリリースします。
+    // FreeSet をエンコードし、その結果をデコードします。このプロセスは、FreeSet の状態を保存し、後で復元するために使用されます。エンコードは、ステージングされたブロックを自由としてエンコードするか、またはまだ割り当てられているとしてエンコードするかを選択できます。
     const expectEqual = std.testing.expectEqual;
     const blocks_count = FreeSet.shard_bits;
     var set = try FreeSet.open_empty(std.testing.allocator, blocks_count);
@@ -818,6 +849,8 @@ test "FreeSet checkpoint" {
 }
 
 test "FreeSet encode, decode, encode" {
+    // 状態をエンコードし、デコードし、再度エンコードすることで状態を復元できるかどうかを確認します。
+    // 一様なパターン、混合パターン、ランダムパターンの3つの異なるパターンでテストします。
     const shard_bits = FreeSet.shard_bits / @bitSizeOf(usize);
     // Uniform.
     try test_encode(&.{.{ .fill = .uniform_ones, .words = shard_bits }});
@@ -933,6 +966,9 @@ fn expect_bit_set_equal(a: DynamicBitSetUnmanaged, b: DynamicBitSetUnmanaged) !v
 }
 
 test "FreeSet decode small bitset into large bitset" {
+    // 異なるサイズ変更しながらも正しく動作するかを確認する。
+    // FreeSetの状態を保持しながら異なるサイズのビットセットに復元したい
+    // 小さなビットセットをエンコードしてから大きなビットセットへデコードできるかどうかを確認する
     const shard_bits = FreeSet.shard_bits;
     var small_set = try FreeSet.open_empty(std.testing.allocator, shard_bits);
     defer small_set.deinit(std.testing.allocator);
@@ -969,6 +1005,8 @@ test "FreeSet decode small bitset into large bitset" {
 }
 
 test "FreeSet encode/decode manual" {
+    // 手動作成したエンコード済みデータをデコードして期待通りか
+    // また、デコードしたデータを再度エンコードして元のデータと一致するかを確認する
     const encoded_expect = mem.sliceAsBytes(&[_]usize{
         // Mask 1: run of 2 words of 0s, then 3 literals
         0 | (2 << 1) | (3 << 32),
@@ -1045,6 +1083,12 @@ fn find_bit(
 }
 
 test "find_bit" {
+    // ビットセット内の特定の状態のビットを探せること
+    // 特定の状態＝設定 or 未設定
+    // まず、疑似乱数生成器（PRNG）を初期化します。これは、テスト中にランダムなビットパターンを生成するために使用されます。
+    // 次に、ビットセットの長さを1から始めて、それを1ずつ増やしながらループを実行します。このループでは、各イテレーションで新しいビットセットが作成され、そのビットはランダムに設定または未設定になります。
+    // その後、各ビットセットに対して、find_bit 関数が設定されたビットを正しく見つけることができるかどうかをテストします。これは、20回繰り返されます。
+    // 最後に、find_bit 関数が未設定のビットを正しく見つけることができるかどうかをテストします。これも20回繰り返されます。
     var prng = std.rand.DefaultPrng.init(123);
     const random = prng.random();
 
@@ -1092,6 +1136,12 @@ fn test_find_bit(
 }
 
 test "FreeSet.acquire part-way through a shard" {
+    // 予約されたブロックを途中で取得することができるかどうかを確認する
+    // まず、3つのシャード（ビットセットの部分）を持つ空の FreeSet を作成します。
+    // 次に、1つのブロックを予約します（reservation_a）。この予約は、後で解放するために保持されます。
+    // さらに、2つのシャードに相当するブロックを予約します（reservation_b）。この予約も後で解放するために保持されます。
+    // その後、reservation_b のすべてのブロックを取得します。各取得操作で、取得されたアドレスが予想される値（reservation_a のブロック数に i を加えたもの）であることを確認します。これにより、acquire メソッドが予約されたブロックを正しく取得していることが確認されます。
+    // 最後に、reservation_b のすべてのブロックが取得された後に、さらにブロックを取得しようとすると、null が返されることを確認します。これにより、予約されたブロックがすべて取得された後には、その予約からはこれ以上ブロックを取得できないことが確認されます。
     var set = try FreeSet.open_empty(std.testing.allocator, FreeSet.shard_bits * 3);
     defer set.deinit(std.testing.allocator);
 

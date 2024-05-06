@@ -59,6 +59,7 @@ pub fn checksum(source: []const u8) u128 {
 }
 
 test "checksum empty" {
+    // チェックサムは空のバイト列に対してゼロであるべきです。
     var stream = ChecksumStream.init();
     stream.add(&.{});
     try std.testing.expectEqual(stream.checksum(), comptime checksum(&.{}));
@@ -92,6 +93,8 @@ pub const ChecksumStream = struct {
 //
 // "checksum stability" test further nails down the exact behavior.
 test "checksum test vectors" {
+    // チェックサム関数がテストベクトル期待どおりかどうかをテスト
+    // テストベクトルとは入力と出力のセットのこと
     const TestVector = struct {
         source: []const u8,
         hash: u128,
@@ -112,6 +115,9 @@ test "checksum test vectors" {
 }
 
 test "checksum simple fuzzing" {
+    // チェックサム関数がランダムな入力に対して期待どおりかどうかをテスト
+    // ファジングテストとはランダムな入力データにより脆弱性を見つけるテスト
+    // チェックサム関数が純粋関数であることも確認している
     var prng = std.rand.DefaultPrng.init(42);
 
     const msg_min = 1;
@@ -144,6 +150,12 @@ test "checksum simple fuzzing" {
 
 // Change detector test to ensure we don't inadvertency modify our checksum function.
 test "checksum stability" {
+    // 安定性をテスト
+    // 同じ入力に対して同じ出力を返すことを確認
+    // このテストでは様々な入力を使用
+    // 様々な入力とは例えば、ゼロのバイト列、1ビットだけ立っているバイト列、擬似乱数のバイト列など
+    // case配列が0でないこと、std.math.maxInt(u128)でないこと、それ以外のcase配列と異なることを確認
+    // 最後にハッシュを取得し、予想されるハッシュと一致するか確
     var buf: [1024]u8 = undefined;
     var cases: [896]u128 = undefined;
     var case_index: usize = 0;
