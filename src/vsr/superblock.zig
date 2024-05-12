@@ -1503,19 +1503,32 @@ pub const Caller = enum {
 };
 
 test "SuperBlockHeader" {
+    // このテストは、SuperBlockHeaderの動作を確認します。
+    // 特に、バージョン、リリースフォーマット、チェックサムの設定と検証について検証します。
+
+    // テスト用のアサート関数を定義します。
     const expect = std.testing.expect;
 
+    // SuperBlockHeaderを初期化します。全てのフィールドをゼロで初期化します。
     var a = std.mem.zeroes(SuperBlockHeader);
+    // バージョンとリリースフォーマットを設定します。
     a.version = SuperBlockVersion;
     a.release_format = vsr.Release.minimum;
+    // チェックサムを設定します。
     a.set_checksum();
 
+    // コピーの数が0であることを確認します。
     assert(a.copy == 0);
+    // チェックサムが有効であることを確認します。
     try expect(a.valid_checksum());
 
+    // コピーの数を1増やします。
     a.copy += 1;
+    // チェックサムが有効であることを再度確認します。
     try expect(a.valid_checksum());
 
+    // バージョンを1増やします。
     a.version += 1;
+    // バージョンを変更したため、チェックサムが無効になることを確認します。
     try expect(!a.valid_checksum());
 }

@@ -2419,6 +2419,10 @@ fn header_ok(
 }
 
 test "recovery_cases" {
+    // メソッドの完全性の確認
+    // 一致するケースの存在ないし失敗するケースの存在の確認する
+    // すべてのパラメータの組み合わせが、ちょうど1つのケースに一致するかどうかの確認
+    // すべてのパラメータの組み合わせは、10の場合2^10=1024通りある
     const parameters_count = 10;
     // Verify that every pattern matches exactly one case.
     //
@@ -2527,6 +2531,7 @@ pub fn format_wal_headers(cluster: u128, offset_logical: u64, target: []u8) usiz
 }
 
 test "format_wal_headers" {
+    // ファジングテスト
     const fuzz = @import("./journal_format_fuzz.zig");
     try fuzz.fuzz_format_wal_headers(constants.sector_size);
 }
@@ -2574,6 +2579,7 @@ pub fn format_wal_prepares(cluster: u128, offset_logical: u64, target: []u8) usi
 }
 
 test "format_wal_prepares" {
+    // ファジングテスト
     const fuzz = @import("./journal_format_fuzz.zig");
     try fuzz.fuzz_format_wal_prepares(256 * 1024);
 }

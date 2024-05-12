@@ -370,26 +370,43 @@ pub fn QuorumsType(comptime options: Options) type {
 }
 
 test "Quorums.working" {
+    // このテストは、クォーラムが正常に動作することを確認します。
+    // ファズテストを使用して、さまざまなランダムな状況でクォーラムの動作を検証します。
+
+    // 乱数生成器を初期化します。これはファズテストで使用されます。
     var prng = std.rand.DefaultPrng.init(123);
 
     // Don't print warnings from the Quorums.
+    // クォーラムからの警告を表示しないようにします。
+    // テストの結果に影響を与えない警告メッセージを抑制するためのステップです。
     const level = std.testing.log_level;
     std.testing.log_level = std.log.Level.err;
     defer std.testing.log_level = level;
 
+    // ファズテストを実行します。これにより、クォーラムがさまざまな状況で正常に動作することを確認します。
     try fuzz.fuzz_quorums_working(prng.random());
 }
 
 test "Quorum.repairs" {
+    // このテストは、クォーラムが修復操作を正常に実行できることを確認します。
+    // ファズテストを使用して、さまざまなランダムな状況でクォーラムの修復操作を検証します。
+
+    // 乱数生成器を初期化します。これはファズテストで使用されます。
     var prng = std.rand.DefaultPrng.init(123);
 
     // Don't print warnings from the Quorums.
+    // クォーラムからの警告を表示しないようにします。
+    // テストの結果に影響を与えない警告メッセージを抑制するためのステップです。
     const level = std.testing.log_level;
     std.testing.log_level = std.log.Level.err;
     defer std.testing.log_level = level;
 
+    // ファズテストを実行します。スーパーブロックのコピー数を4として設定します。
+    // これにより、クォーラムがスーパーブロックの修復操作を正常に実行できることを確認します。
     try fuzz.fuzz_quorum_repairs(prng.random(), .{ .superblock_copies = 4 });
+
     // TODO: Enable these once SuperBlockHeader is generic over its Constants.
+    // スーパーブロックのコピー数を6および8として設定し、それぞれの状況でクォーラムの修復操作が正常に実行できることを確認します。
     // try fuzz.fuzz_quorum_repairs(prng.random(), .{ .superblock_copies = 6 });
     // try fuzz.fuzz_quorum_repairs(prng.random(), .{ .superblock_copies = 8 });
 }

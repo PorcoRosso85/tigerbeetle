@@ -150,6 +150,9 @@ fn test_smallest_interval(bounds: []const i64, smallest_interval: Marzullo.Inter
 }
 
 test "marzullo" {
+    // 時間間隔配列と期待される間隔を確認、マーズローアルゴリズムの実装が正しいかどうかを確認
+    // マーズローアルゴリズムは、多数のノイズのある時刻ソースから正確な時刻を推定するために使用される合意アルゴリズムです。
+    // 時間間隔配列とマーズローアルゴリズムの期待最小間隔をtest_smallest_intervalに渡す
     try test_smallest_interval(
         &[_]i64{
             11, 13,
