@@ -586,26 +586,51 @@ pub fn table_count_max_for_level(growth_factor: u32, level: u32) u32 {
 }
 
 test "table_count_max_for_level/tree" {
+    // このテストは、table_count_max_for_level関数とtable_count_max_for_tree関数が正しく動作することを確認します。
+    // table_count_max_for_level関数は、特定のレベルでのテーブルの最大数を計算します。
+    // table_count_max_for_tree関数は、特定の深さまでのツリー全体でのテーブルの最大数を計算します。
+
     const expectEqual = std.testing.expectEqual;
 
+    // レベル0でのテーブルの最大数を確認します。
     try expectEqual(@as(u32, 8), table_count_max_for_level(8, 0));
+    // レベル1でのテーブルの最大数を確認します。
     try expectEqual(@as(u32, 64), table_count_max_for_level(8, 1));
+    // レベル2でのテーブルの最大数を確認します。
     try expectEqual(@as(u32, 512), table_count_max_for_level(8, 2));
+    // レベル3でのテーブルの最大数を確認します。
     try expectEqual(@as(u32, 4096), table_count_max_for_level(8, 3));
+    // レベル4でのテーブルの最大数を確認します。
     try expectEqual(@as(u32, 32768), table_count_max_for_level(8, 4));
+    // レベル5でのテーブルの最大数を確認します。
     try expectEqual(@as(u32, 262144), table_count_max_for_level(8, 5));
+    // レベル6でのテーブルの最大数を確認します。
     try expectEqual(@as(u32, 2097152), table_count_max_for_level(8, 6));
 
+    // 深さ2までのツリー全体でのテーブルの最大数を確認します。
     try expectEqual(@as(u32, 8 + 64), table_count_max_for_tree(8, 2));
+    // 深さ3までのツリー全体でのテーブルの最大数を確認します。
     try expectEqual(@as(u32, 72 + 512), table_count_max_for_tree(8, 3));
+    // 深さ4までのツリー全体でのテーブルの最大数を確認します。
     try expectEqual(@as(u32, 584 + 4096), table_count_max_for_tree(8, 4));
+    // 深さ5までのツリー全体でのテーブルの最大数を確認します。
     try expectEqual(@as(u32, 4680 + 32768), table_count_max_for_tree(8, 5));
+    // 深さ6までのツリー全体でのテーブルの最大数を確認します。
     try expectEqual(@as(u32, 37448 + 262144), table_count_max_for_tree(8, 6));
+    // 深さ7までのツリー全体でのテーブルの最大数を確認します。
     try expectEqual(@as(u32, 299592 + 2097152), table_count_max_for_tree(8, 7));
 }
 
 test "TreeType" {
+    // このテストは、TreeTypeのインスタンス化とそのBuilderの参照が正しく行えることを確認します。
+    // TreeTypeは、キーと値のペアを保持するためのツリーの型を定義します。
+
+    // CompositeKey型をインポートします。これはツリーのキーとして使用します。
     const CompositeKey = @import("composite_key.zig").CompositeKeyType(u64);
+
+    // TableTypeをインポートし、インスタンス化します。キーとしてCompositeKeyを、値としてCompositeKeyを使用します。
+    // また、キーから値を取得する関数、センチネルキーを取得する関数、墓石を取得する関数、
+    // キーから墓石を取得する関数をそれぞれ指定します。最後に、テーブルのモードを.secondary_indexとします。
     const Table = @import("table.zig").TableType(
         CompositeKey.Key,
         CompositeKey,
@@ -617,6 +642,9 @@ test "TreeType" {
         .secondary_index,
     );
 
+    // Storage型をインポートします。これはツリーのストレージとして使用します。
     const Storage = @import("../storage.zig").Storage;
+
+    // TreeTypeのBuilderの全ての宣言を参照します。これにより、Builderが正しく定義されていることを確認します。
     std.testing.refAllDecls(TreeType(Table, Storage));
 }

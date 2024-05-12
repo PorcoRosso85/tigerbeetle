@@ -2174,7 +2174,12 @@ fn sum_overflows_test(comptime Int: type) !void {
 }
 
 test "sum_overflows" {
+    // このテストは、sum_overflows_test関数がu64とu128型のオーバーフローを正しく検出できることを確認します。
+    // オーバーフローとは、2つの整数の和がその型の最大値を超える場合に発生します。
+
+    // u64型のオーバーフローをテストします。
     try sum_overflows_test(u64);
+    // u128型のオーバーフローをテストします。
     try sum_overflows_test(u128);
 }
 
@@ -2749,6 +2754,11 @@ fn check(test_table: []const u8) !void {
 }
 
 test "create_accounts" {
+    // このテストは、アカウントの作成と検索の動作を検証します。
+    // さまざまな条件でアカウントを作成し、その後でアカウントを検索して結果を確認します。
+
+    // アカウントの作成を試みます。各行は異なる条件でのアカウント作成を表しています。
+    // 作成後の結果は、最後のフィールドで指定された期待値と比較されます。
     try check(
         \\ account A1  0  0  0  0 U2 U2 U2 _ L3 C4 _   _   _ _ _ _ ok
         \\ account A0  1  1  1  1  _  _  _ 1 L0 C0 _ D<C C<D _ 1 1 timestamp_must_be_zero
@@ -2782,16 +2792,25 @@ test "create_accounts" {
 }
 
 test "create_accounts: empty" {
+    // このテストは、空の状態でアカウントを作成しようとするときの動作を検証します。
+    // 何もアカウントが存在しない状態で、アカウントの作成と転送のコミットを試みます。
+
+    // アカウントの作成と転送のコミットを試みます。
     try check(
         \\ commit create_transfers
     );
 }
 
 test "linked accounts" {
+    // このテストは、アカウントがリンクされた状態での動作を検証します。
+    // 一連のイベントが連鎖して発生する場合と、個々のイベントが発生する場合の両方を試します。
+
+    // 個々のイベント（成功）:
     try check(
         \\ account A7  0  0  0  0  _  _  _ _ L1 C1   _   _   _ _ _ _ ok // An individual event (successful):
 
         // A chain of 4 events (the last event in the chain closes the chain with linked=false):
+        // 4つのイベントの連鎖（最後のイベントで連鎖が閉じる）:
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1 LNK   _   _ _ _ _ linked_event_failed // Commit/rollback.
         \\ account A2  0  0  0  0  _  _  _ _ L1 C1 LNK   _   _ _ _ _ linked_event_failed // Commit/rollback.
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1 LNK   _   _ _ _ _ exists              // Fail with .exists.
@@ -2799,20 +2818,25 @@ test "linked accounts" {
 
         // An individual event (successful):
         // This does not see any effect from the failed chain above.
+        // 個々のイベント（成功）:
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1   _   _   _ _ _ _ ok
 
         // A chain of 2 events (the first event fails the chain):
+        // 2つのイベントの連鎖（最初のイベントで連鎖が失敗）:
         \\ account A1  0  0  0  0  _  _  _ _ L1 C2 LNK   _   _ _ _ _ exists_with_different_flags
         \\ account A2  0  0  0  0  _  _  _ _ L1 C1   _   _   _ _ _ _ linked_event_failed
 
         // An individual event (successful):
+        // 個々のイベント（成功）:
         \\ account A2  0  0  0  0  _  _  _ _ L1 C1   _   _   _ _ _ _ ok
 
         // A chain of 2 events (the last event fails the chain):
+        // 2つのイベントの連鎖（最後のイベントで連鎖が失敗）:
         \\ account A3  0  0  0  0  _  _  _ _ L1 C1 LNK   _   _ _ _ _ linked_event_failed
         \\ account A1  0  0  0  0  _  _  _ _ L2 C1   _   _   _ _ _ _ exists_with_different_ledger
 
         // A chain of 2 events (successful):
+        // 2つのイベントの連鎖（成功）:
         \\ account A3  0  0  0  0  _  _  _ _ L1 C1 LNK   _   _ _ _ _ ok
         \\ account A4  0  0  0  0  _  _  _ _ L1 C1   _   _   _ _ _ _ ok
         \\ commit create_accounts
@@ -2825,10 +2849,15 @@ test "linked accounts" {
         \\ commit lookup_accounts
     );
 
+    // このテストは、アカウントがリンクされた状態での動作を検証します。
+    // 一連のイベントが連鎖して発生する場合と、個々のイベントが発生する場合の両方を試します。
+
+    // 個々のイベント（成功）:
     try check(
         \\ account A7  0  0  0  0  _  _  _ _ L1 C1   _   _   _ _ _ _ ok // An individual event (successful):
 
         // A chain of 4 events:
+        // 4つのイベントの連鎖:
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1 LNK   _   _ _ _ _ linked_event_failed // Commit/rollback.
         \\ account A2  0  0  0  0  _  _  _ _ L1 C1 LNK   _   _ _ _ _ linked_event_failed // Commit/rollback.
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1 LNK   _   _ _ _ _ exists              // Fail with .exists.
@@ -2844,16 +2873,22 @@ test "linked accounts" {
 
     // TODO How can we test that events were in fact rolled back in LIFO order?
     // All our rollback handlers appear to be commutative.
+    // すべてのロールバックハンドラーは交換可能に見えます。
 }
 
 test "linked_event_chain_open" {
+    // このテストは、イベントチェーンが開いたままの状態での動作を検証します。
+    // 3つのイベントの連鎖と、開いたままの2つのイベントの連鎖を試します。
+
     try check(
     // A chain of 3 events (the last event in the chain closes the chain with linked=false):
+    // 3つのイベントの連鎖（最後のイベントで連鎖が閉じる）:
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1 LNK   _   _ _ _ _ ok
         \\ account A2  0  0  0  0  _  _  _ _ L1 C1 LNK   _   _ _ _ _ ok
         \\ account A3  0  0  0  0  _  _  _ _ L1 C1   _   _   _ _ _ _ ok
 
         // An open chain of 2 events:
+        // 開いたままの2つのイベントの連鎖:
         \\ account A4  0  0  0  0  _  _  _ _ L1 C1 LNK   _   _ _ _ _ linked_event_failed
         \\ account A5  0  0  0  0  _  _  _ _ L1 C1 LNK   _   _ _ _ _ linked_event_chain_open
         \\ commit create_accounts
@@ -2868,11 +2903,16 @@ test "linked_event_chain_open" {
 }
 
 test "linked_event_chain_open for an already failed batch" {
+    // このテストは、既に失敗したバッチに対する開いたイベントチェーンの動作を検証します。
+    // 成功する個々のイベントと、2番目のイベントで失敗する3つのイベントの開いたチェーンを試します。
+
     try check(
     // An individual event (successful):
+    // 個々のイベント（成功）:
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1   _   _   _ _ _ _ ok
 
         // An open chain of 3 events (the second one fails):
+        // 2番目のイベントで失敗する3つのイベントの開いたチェーン:
         \\ account A2  0  0  0  0  _  _  _ _ L1 C1 LNK   _   _ _ _ _ linked_event_failed
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1 LNK   _   _ _ _ _ exists_with_different_flags
         \\ account A3  0  0  0  0  _  _  _ _ L1 C1 LNK   _   _ _ _ _ linked_event_chain_open
@@ -2886,10 +2926,15 @@ test "linked_event_chain_open for an already failed batch" {
 }
 
 test "linked_event_chain_open for a batch of 1" {
+    // このテストは、バッチサイズが1の場合の開いたイベントチェーンの動作を検証します。
+    // 1つのイベントの開いたチェーンを試します。
+
+    // 1つのイベントの開いたチェーン:
     try check(
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1 LNK   _   _ _ _ _ linked_event_chain_open
         \\ commit create_accounts
         \\
+        // アカウントA1の状態を確認します。
         \\ lookup_account A1 _
         \\ commit lookup_accounts
     );
@@ -2900,6 +2945,10 @@ test "linked_event_chain_open for a batch of 1" {
 // 2. enums tested in the order that they are defined, for easier auditing of coverage, and that
 // 3. state machine logic cannot be reordered in any way, breaking determinism.
 test "create_transfers/lookup_transfers" {
+    // このテストは、状態マシンの転送作成と転送検索の機能を検証します。
+    // それぞれのアカウントと転送の設定を行い、期待する結果が得られるかを確認します。
+    //
+    // アカウントの初期設定を行います。各アカウントは特定の状態で開始します。
     try check(
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1   _   _   _ _ _ _ ok
         \\ account A2  0  0  0  0  _  _  _ _ L2 C2   _   _   _ _ _ _ ok
@@ -2909,6 +2958,7 @@ test "create_transfers/lookup_transfers" {
         \\ commit create_accounts
 
         // Set up initial balances.
+        // 各アカウントの初期残高を設定します。
         \\ setup A1  100   200    0     0
         \\ setup A2    0     0    0     0
         \\ setup A3    0     0  110   210
@@ -2916,9 +2966,12 @@ test "create_transfers/lookup_transfers" {
         \\ setup A5    0 -1000   10 -1100
 
         // Bump the state machine time to `maxInt - 3s` for testing timeout overflow.
+        // 状態マシンの時間をテストのタイムアウトオーバーフローをテストするために `maxInt - 3s` に設定します。
         \\ tick -3 seconds
 
         // Test errors by descending precedence.
+        // 優先度の降順でエラーをテストします。
+        // 以下の各転送は特定のエラー条件をテストします。
         \\ transfer   T0 A0 A0    0  T1  _  _  _    _ L0 C0   _ PEN   _   _   _   _ P1 1 timestamp_must_be_zero
         \\ transfer   T0 A0 A0    0  T1  _  _  _    _ L0 C0   _ PEN   _   _   _   _ P1 _ reserved_flag
         \\ transfer   T0 A0 A0    0  T1  _  _  _    _ L0 C0   _ PEN   _   _   _   _  _ _ id_must_not_be_zero
@@ -2949,40 +3002,82 @@ test "create_transfers/lookup_transfers" {
         \\ transfer   T1 A1 A3  123   _  _  _  _    1 L1 C1   _ PEN   _   _   _   _  _ _ ok
 
         // Ensure that idempotence is only checked after validation.
+        // このテストは、状態遷移マシンの動作を検証します。特に、複数の転送とアカウントのルックアップが正しく機能することを確認します。
+
+        // T1, A1, A3間で123の転送を試みます。この転送は、同じ台帳を持つアカウント間でのみ可能であることを確認します。
         \\ transfer   T1 A1 A3  123   _  _  _  _    1 L2 C1   _ PEN   _   _   _   _  _ _ transfer_must_have_the_same_ledger_as_accounts
+
+        // 以下の転送は、異なるフラグを持つ既存の転送と競合することを確認します。
         \\ transfer   T1 A1 A3   -0   _ U1 U1 U1    _ L1 C2   _   _   _   _   _   _  _ _ exists_with_different_flags
+
+        // 以下の転送は、異なるデビットアカウントIDを持つ既存の転送と競合することを確認します。
         \\ transfer   T1 A3 A1   -0   _ U1 U1 U1    1 L1 C2   _ PEN   _   _   _   _  _ _ exists_with_different_debit_account_id
+
+        // 以下の転送は、異なるクレジットアカウントIDを持つ既存の転送と競合することを確認します。
         \\ transfer   T1 A1 A4   -0   _ U1 U1 U1    1 L1 C2   _ PEN   _   _   _   _  _ _ exists_with_different_credit_account_id
+
+        // 以下の転送は、異なる金額を持つ既存の転送と競合することを確認します。
         \\ transfer   T1 A1 A3   -0   _ U1 U1 U1    1 L1 C1   _ PEN   _   _   _   _  _ _ exists_with_different_amount
+
+        // 以下の転送は、異なるユーザーデータ128を持つ既存の転送と競合することを確認します。
         \\ transfer   T1 A1 A3  123   _ U1 U1 U1    1 L1 C2   _ PEN   _   _   _   _  _ _ exists_with_different_user_data_128
+
+        // 以下の転送は、異なるユーザーデータ64を持つ既存の転送と競合することを確認します。
         \\ transfer   T1 A1 A3  123   _  _ U1 U1    1 L1 C2   _ PEN   _   _   _   _  _ _ exists_with_different_user_data_64
+
+        // 以下の転送は、異なるユーザーデータ32を持つ既存の転送と競合することを確認します。
         \\ transfer   T1 A1 A3  123   _  _  _ U1    1 L1 C2   _ PEN   _   _   _   _  _ _ exists_with_different_user_data_32
+
+        // 以下の転送は、異なるタイムアウトを持つ既存の転送と競合することを確認します。
         \\ transfer   T1 A1 A3  123   _  _  _  _    2 L1 C2   _ PEN   _   _   _   _  _ _ exists_with_different_timeout
+
+        // 以下の転送は、異なるコードを持つ既存の転送と競合することを確認します。
         \\ transfer   T1 A1 A3  123   _  _  _  _    1 L1 C2   _ PEN   _   _   _   _  _ _ exists_with_different_code
+
+        // 以下の転送は、既存の転送と競合することを確認します。
         \\ transfer   T1 A1 A3  123   _  _  _  _    1 L1 C1   _ PEN   _   _   _   _  _ _ exists
+
+        // 以下の転送は、正常に完了することを確認します。
         \\ transfer   T2 A3 A1    7   _  _  _  _    _ L1 C2   _   _   _   _   _   _  _ _ ok
         \\ transfer   T3 A1 A3    3   _  _  _  _    _ L1 C2   _   _   _   _   _   _  _ _ ok
+
+        // すべての転送をコミットします。
         \\ commit create_transfers
         \\
+
+        // A1とA3のアカウントをルックアップし、それぞれの残高を確認します。
         \\ lookup_account A1 223 203   0   7
         \\ lookup_account A3   0   7 233 213
+
+        // アカウントルックアップをコミットします。
         \\ commit lookup_accounts
         \\
+
+        // すべての転送が存在することを確認します。
         \\ lookup_transfer T1 exists true
         \\ lookup_transfer T2 exists true
         \\ lookup_transfer T3 exists true
+
+        // 存在しない転送が存在しないことを確認します。
         \\ lookup_transfer -0 exists false
+
+        // 転送のルックアップをコミットします。
         \\ commit lookup_transfers
     );
 }
 
 test "create/lookup 2-phase transfers" {
+    // このテストは、2段階の転送を作成し、それを検索する機能をテストします。
+    //
+    // まず、2つのアカウントA1とA2を作成します。
     try check(
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1   _   _   _ _ _ _ ok
         \\ account A2  0  0  0  0  _  _  _ _ L1 C1   _   _   _ _ _ _ ok
         \\ commit create_accounts
 
         // First phase.
+        // 第一段階では、アカウントA1からA2への複数の転送を作成します。
+        // ここでは、転送の状態（保留中、完了、など）や、転送の詳細（転送量、手数料、など）を設定します。
         \\ transfer   T1 A1 A2   15   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _ ok // Not pending!
         \\ transfer   T2 A1 A2   15   _  _  _  _ 1000 L1 C1   _ PEN   _   _   _   _  _ _ ok
         \\ transfer   T3 A1 A2   15   _  _  _  _   50 L1 C1   _ PEN   _   _   _   _  _ _ ok
@@ -2992,15 +3087,23 @@ test "create/lookup 2-phase transfers" {
         \\ commit create_transfers
 
         // Check balances before resolving.
+        // 転送を解決する前に、アカウントの残高を確認します。
         \\ lookup_account A1 53 15  0  0
         \\ lookup_account A2  0  0 53 15
         \\ commit lookup_accounts
 
         // Bump the state machine time in +1s for testing the timeout expiration.
+        // テストのタイムアウトの有効期限をテストするために、状態マシンの時間を+1秒進めます。
         \\ tick 1 seconds
 
         // Second phase.
+        // 第二フェーズ
+        // 以下の転送テストは、さまざまなシナリオでの転送の挙動を検証します。
+
+        // T101からA1へのA2への転送をテストします。結果は成功（ok）となるべきです。
         \\ transfer T101 A1 A2   13  T2 U1 U1 U1    _ L1 C1   _   _ POS   _   _   _  _ _ ok
+
+        // T0からA8へのA9への転送をテストします。結果はタイムスタンプがゼロでなければならない（timestamp_must_be_zero）となるべきです。
         \\ transfer   T0 A8 A9   16  T0 U2 U2 U2   50 L6 C7   _ PEN POS VOI   _   _  _ 1 timestamp_must_be_zero
         \\ transfer   T0 A8 A9   16  T0 U2 U2 U2   50 L6 C7   _ PEN POS VOI   _   _  _ _ id_must_not_be_zero
         \\ transfer   -0 A8 A9   16  T0 U2 U2 U2   50 L6 C7   _ PEN POS VOI   _   _  _ _ id_must_not_be_int_max
@@ -3041,22 +3144,35 @@ test "create/lookup 2-phase transfers" {
         \\ transfer T102 A1 A2   15  T4 U1 U1 U1    _ L1 C1   _   _   _ VOI   _   _  _ _ pending_transfer_expired
         \\ transfer T105 A0 A0    _  T5 U0 U0 U0    _ L0 C0   _   _ POS   _   _   _  _ _ ok
         \\ transfer T106 A0 A0    0  T6 U0 U0 U0    _ L1 C1   _   _ POS   _   _   _  _ _ ok
+
+        // 以下の転送テストは、さまざまなエラーコンディションを検証します。
+
+        // 以下のコミットは、転送の作成を確定します。
         \\ commit create_transfers
 
         // Check balances after resolving.
+        // 解決後の残高を確認します。
         \\ lookup_account A1  0 36  0  0
         \\ lookup_account A2  0  0  0 36
+
+        // アカウントのルックアップを確定します。
         \\ commit lookup_accounts
     );
 }
 
 test "create/lookup expired transfers" {
+    // このテストは、転送が期限切れになるとどのように振る舞うかを検証します。
+    // 期限切れの転送は、その転送が完了する前に期限が切れた場合に発生します。
     try check(
+
+    // アカウントA1とA2を作成します。
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1   _   _   _ _ _ _ ok
         \\ account A2  0  0  0  0  _  _  _ _ L1 C1   _   _   _ _ _ _ ok
         \\ commit create_accounts
 
         // First phase.
+        // 第一段階では、アカウントA1からA2への複数の転送を作成します。
+        // ここでは、転送の状態（保留中、完了、など）や、転送の詳細（転送量、手数料、など）を設定します。
         \\ transfer   T1 A1 A2   10   _  _  _  _    0 L1 C1   _ PEN   _   _   _   _  _ _ ok // Timeout zero will never expire.
         \\ transfer   T2 A1 A2   11   _  _  _  _    1 L1 C1   _ PEN   _   _   _   _  _ _ ok
         \\ transfer   T3 A1 A2   12   _  _  _  _    2 L1 C1   _ PEN   _   _   _   _  _ _ ok
@@ -3064,29 +3180,34 @@ test "create/lookup expired transfers" {
         \\ commit create_transfers
 
         // Check balances before expiration.
+        // 転送を解決する前に、アカウントの残高を確認します。
         \\ lookup_account A1 46  0  0  0
         \\ lookup_account A2  0  0 46  0
         \\ commit lookup_accounts
 
         // Check balances after 1s.
+        // テストのタイムアウトの有効期限をテストするために、状態マシンの時間を+1秒進めます。
         \\ tick 1 seconds
         \\ lookup_account A1 35  0  0  0
         \\ lookup_account A2  0  0 35  0
         \\ commit lookup_accounts
 
         // Check balances after 1s.
+        // 状態マシンの時間をさらに+1秒進めます。
         \\ tick 1 seconds
         \\ lookup_account A1 23  0  0  0
         \\ lookup_account A2  0  0 23  0
         \\ commit lookup_accounts
 
         // Check balances after 1s.
+        // 状態マシンの時間をさらに+1秒進めます。
         \\ tick 1 seconds
         \\ lookup_account A1 10  0  0  0
         \\ lookup_account A2  0  0 10  0
         \\ commit lookup_accounts
 
         // Second phase.
+        // 第二段階では、期限切れの転送を試みます。
         \\ transfer T101 A1 A2   10  T1 U1 U1 U1    _ L1 C1   _   _ POS   _   _   _  _ _ ok
         \\ transfer T102 A1 A2   11  T2 U1 U1 U1    _ L1 C1   _   _ POS   _   _   _  _ _ pending_transfer_expired
         \\ transfer T103 A1 A2   12  T3 U1 U1 U1    _ L1 C1   _   _ POS   _   _   _  _ _ pending_transfer_expired
@@ -3094,6 +3215,7 @@ test "create/lookup expired transfers" {
         \\ commit create_transfers
 
         // Check final balances.
+        // 最終的な残高を確認します。
         \\ lookup_account A1  0 10  0  0
         \\ lookup_account A2  0  0  0 10
         \\ commit lookup_accounts
@@ -3101,91 +3223,139 @@ test "create/lookup expired transfers" {
 }
 
 test "create_transfers: empty" {
+    // このテストは、転送リストが空の場合の挙動を検証します。
+    // 転送リストが空の場合でも、エラーなくコミットできることを確認します。
+    //
+    // 転送リストが空の状態でコミットを試みます。
     try check(
         \\ commit create_transfers
     );
 }
 
 test "create_transfers/lookup_transfers: failed transfer does not exist" {
+    // このテストは、存在しない転送が正しく検出されることを確認します。
+    // 2つのアカウントを作成し、その後で2つの転送を試みます。
+    // 1つ目の転送は成功し、2つ目の転送は失敗します。
+    // 最後に、各転送が存在するかどうかを確認します。
     try check(
+    // アカウントA1とA2を作成します。初期状態では、どちらのアカウントも残高は0です。
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1   _   _   _ _ _ _ ok
         \\ account A2  0  0  0  0  _  _  _ _ L1 C1   _   _   _ _ _ _ ok
         \\ commit create_accounts
         \\
+        // アカウントA1からA2への転送T1を試みます。この転送は成功します。
         \\ transfer   T1 A1 A2   15   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _ ok
+        // アカウントA1からA2への転送T2を試みます。しかし、この転送は失敗します。
         \\ transfer   T2 A1 A2   15   _  _  _  _    _ L0 C1   _   _   _   _   _   _  _ _ ledger_must_not_be_zero
         \\ commit create_transfers
         \\
+        // アカウントA1とA2の状態を確認します。A1は15を失い、A2は15を得ています。
         \\ lookup_account A1 0 15 0  0
         \\ lookup_account A2 0  0 0 15
         \\ commit lookup_accounts
         \\
+        // 転送T1が存在することを確認します。
         \\ lookup_transfer T1 exists true
+        // 転送T2が存在しないことを確認します。
         \\ lookup_transfer T2 exists false
         \\ commit lookup_transfers
     );
 }
 
 test "create_transfers: failed linked-chains are undone" {
+    // このテストは、失敗した連鎖転送が正しく元に戻されることを確認します。
+    // 2つのアカウントを作成し、その後で4つの転送を試みます。
+    // すべての転送は失敗します。
+    // 最後に、各転送が存在するかどうかを確認します。
     try check(
+    // アカウントA1とA2を作成します。初期状態では、どちらのアカウントも残高は0です。
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1   _   _   _ _ _ _ ok
         \\ account A2  0  0  0  0  _  _  _ _ L1 C1   _   _   _ _ _ _ ok
         \\ commit create_accounts
         \\
+        // アカウントA1からA2への転送T1を試みます。しかし、この転送は失敗します。
         \\ transfer   T1 A1 A2   15   _  _  _  _    _ L1 C1 LNK   _   _   _   _   _  _ _ linked_event_failed
+        // アカウントA1からA2への転送T2を試みます。しかし、この転送は失敗します。
         \\ transfer   T2 A1 A2   15   _  _  _  _    _ L0 C1   _   _   _   _   _   _  _ _ ledger_must_not_be_zero
         \\ commit create_transfers
         \\
+        // アカウントA1からA2への転送T3を試みます。しかし、この転送は失敗します。
         \\ transfer   T3 A1 A2   15   _  _  _  _    1 L1 C1 LNK PEN   _   _   _   _  _ _ linked_event_failed
+        // アカウントA1からA2への転送T4を試みます。しかし、この転送は失敗します。
         \\ transfer   T4 A1 A2   15   _  _  _  _    _ L0 C1   _   _   _   _   _   _  _ _ ledger_must_not_be_zero
         \\ commit create_transfers
         \\
+        // アカウントA1とA2の状態を確認します。どちらのアカウントも残高は変わっていません。
         \\ lookup_account A1 0 0 0 0
         \\ lookup_account A2 0 0 0 0
         \\ commit lookup_accounts
         \\
+        // 転送T1が存在しないことを確認します。
         \\ lookup_transfer T1 exists false
+        // 転送T2が存在しないことを確認します。
         \\ lookup_transfer T2 exists false
+        // 転送T3が存在しないことを確認します。
         \\ lookup_transfer T3 exists false
+        // 転送T4が存在しないことを確認します。
         \\ lookup_transfer T4 exists false
         \\ commit lookup_transfers
     );
 }
 
 test "create_transfers: failed linked-chains are undone within a commit" {
+    // このテストは、コミット内で失敗した連鎖転送が正しく元に戻されることを確認します。
+    // 2つのアカウントを作成し、その後で3つの転送を試みます。
+    // 最初の2つの転送は失敗し、最後の転送は成功します。
+    // 最後に、各転送が存在するかどうかを確認します。
     try check(
+    // アカウントA1とA2を作成します。初期状態では、どちらのアカウントも残高は0です。
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1   _ D<C   _ _ _ _ ok
         \\ account A2  0  0  0  0  _  _  _ _ L1 C1   _   _   _ _ _ _ ok
         \\ commit create_accounts
         \\
+        // アカウントA1の残高を20に設定します。
         \\ setup A1 0 0 0 20
         \\
+        // アカウントA1からA2への転送T1を試みます。しかし、この転送は失敗します。
         \\ transfer   T1 A1 A2   15   _ _   _  _    _ L1 C1 LNK   _   _   _   _   _  _ _ linked_event_failed
+        // アカウントA1からA2への転送T2を試みます。しかし、この転送は失敗します。
         \\ transfer   T2 A1 A2    5   _ _   _  _    _ L0 C1   _   _   _   _   _   _  _ _ ledger_must_not_be_zero
+        // アカウントA1からA2への転送T3を試みます。この転送は成功します。
         \\ transfer   T3 A1 A2   15   _ _   _  _    _ L1 C1   _   _   _   _   _   _  _ _ ok
         \\ commit create_transfers
         \\
+        // アカウントA1とA2の状態を確認します。A1は15を失い、A2は15を得ています。
         \\ lookup_account A1 0 15 0 20
         \\ lookup_account A2 0  0 0 15
         \\ commit lookup_accounts
         \\
+        // 転送T1が存在しないことを確認します。
         \\ lookup_transfer T1 exists false
+        // 転送T2が存在しないことを確認します。
         \\ lookup_transfer T2 exists false
+        // 転送T3が存在することを確認します。
         \\ lookup_transfer T3 exists true
         \\ commit lookup_transfers
     );
 }
 
 test "create_transfers: balancing_debit | balancing_credit (*_must_not_exceed_*)" {
+    // このテストは、転送のバランシングデビットとバランシングクレジットが一定の制限を超えないことを確認します。
+    // 3つのアカウントを作成し、その後で複数の転送を試みます。
+    // 一部の転送は成功し、一部は失敗します。
+    // 最後に、各転送が存在するかどうかと、アカウントの状態を確認します。
     try check(
+    // アカウントA1、A2、A3を作成します。初期状態では、どのアカウントも残高は0です。
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1   _ D<C   _ _ _ _ ok
         \\ account A2  0  0  0  0  _  _  _ _ L1 C1   _   _ C<D _ _ _ ok
         \\ account A3  0  0  0  0  _  _  _ _ L1 C1   _   _   _ _ _ _ ok
         \\ commit create_accounts
         \\
+        // アカウントA1の残高を10に、A2のクレジットを10に設定します。
         \\ setup A1 1  0 0 10
         \\ setup A2 0 10 2  0
         \\
+        // 以下の転送を試みます。一部の転送は成功し、一部は失敗します。
         \\ transfer   T1 A1 A3  3     _  _  _  _    _ L2 C1   _   _   _   _ BDR   _  _ _ transfer_must_have_the_same_ledger_as_accounts
         \\ transfer   T1 A3 A2  3     _  _  _  _    _ L2 C1   _   _   _   _   _ BCR  _ _ transfer_must_have_the_same_ledger_as_accounts
         \\ transfer   T1 A1 A3  3     _  _  _  _    _ L1 C1   _   _   _   _ BDR   _  _ _ ok
@@ -3198,6 +3368,7 @@ test "create_transfers: balancing_debit | balancing_credit (*_must_not_exceed_*)
         \\ transfer   T5 A1 A2  1     _  _  _  _    _ L1 C1   _   _   _   _ BDR BCR  _ _ exceeds_credits
 
         // "exists" requires that the amount matches exactly, even when BDR/BCR is set.
+        // "exists"は、BDR/BCRが設定されていても、金額が正確に一致する必要があります。
         \\ transfer   T1 A1 A3    2   _  _  _  _    _ L1 C1   _   _   _   _ BDR   _  _ _ exists_with_different_amount
         \\ transfer   T1 A1 A3    4   _  _  _  _    _ L1 C1   _   _   _   _ BDR   _  _ _ exists_with_different_amount
         \\ transfer   T1 A1 A3    3   _  _  _  _    _ L1 C1   _   _   _   _ BDR   _  _ _ exists
@@ -3206,11 +3377,13 @@ test "create_transfers: balancing_debit | balancing_credit (*_must_not_exceed_*)
         \\ transfer   T4 A3 A2    5   _  _  _  _    _ L1 C1   _   _   _   _   _ BCR  _ _ exists
         \\ commit create_transfers
         \\
+        // アカウントA1、A2、A3の状態を確認します。
         \\ lookup_account A1 1  9 0 10
         \\ lookup_account A2 0 10 2  8
         \\ lookup_account A3 0  8 0  9
         \\ commit lookup_accounts
         \\
+        // 各転送が存在するかどうかを確認します。
         \\ lookup_transfer T1 amount 3
         \\ lookup_transfer T2 amount 6
         \\ lookup_transfer T3 amount 3
@@ -3221,15 +3394,22 @@ test "create_transfers: balancing_debit | balancing_credit (*_must_not_exceed_*)
 }
 
 test "create_transfers: balancing_debit | balancing_credit (¬*_must_not_exceed_*)" {
+    // このテストは、転送のバランシングデビットとバランシングクレジットが一定の制限を超えないことを確認します。
+    // 3つのアカウントを作成し、その後で複数の転送を試みます。
+    // 一部の転送は成功し、一部は失敗します。
+    // 最後に、各転送が存在するかどうかと、アカウントの状態を確認します。
     try check(
+    // アカウントA1、A2、A3を作成します。初期状態では、どのアカウントも残高は0です。
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1   _   _   _ _ _ _ ok
         \\ account A2  0  0  0  0  _  _  _ _ L1 C1   _   _   _ _ _ _ ok
         \\ account A3  0  0  0  0  _  _  _ _ L1 C1   _   _   _ _ _ _ ok
         \\ commit create_accounts
         \\
+        // アカウントA1の残高を10に、A2のクレジットを10に設定します。
         \\ setup A1 1  0 0 10
         \\ setup A2 0 10 2  0
         \\
+        // 以下の転送を試みます。一部の転送は成功し、一部は失敗します。
         \\ transfer   T1 A3 A1   99   _  _  _  _    _ L1 C1   _   _   _   _ BDR BCR  _ _ exceeds_credits
         \\ transfer   T1 A3 A1   99   _  _  _  _    _ L1 C1   _   _   _   _ BDR   _  _ _ exceeds_credits
         \\ transfer   T1 A2 A3   99   _  _  _  _    _ L1 C1   _   _   _   _   _ BCR  _ _ exceeds_debits
@@ -3239,11 +3419,13 @@ test "create_transfers: balancing_debit | balancing_credit (¬*_must_not_exceed_
         \\ transfer   T4 A3 A2   99   _  _  _  _    _ L1 C1   _   _   _   _   _ BCR  _ _ exceeds_debits
         \\ commit create_transfers
         \\
+        // アカウントA1、A2、A3の状態を確認します。
         \\ lookup_account A1 1  9 0 10
         \\ lookup_account A2 0 10 2  8
         \\ lookup_account A3 0  8 0  9
         \\ commit lookup_accounts
         \\
+        // 各転送が存在するかどうかを確認します。
         \\ lookup_transfer T1 amount 9
         \\ lookup_transfer T2 exists false
         \\ lookup_transfer T3 amount 8
@@ -3253,28 +3435,36 @@ test "create_transfers: balancing_debit | balancing_credit (¬*_must_not_exceed_
 }
 
 test "create_transfers: balancing_debit | balancing_credit (amount=0)" {
+    // このテストは、転送のバランシングデビットとバランシングクレジットが0の場合の動作を確認します。
+    // 4つのアカウントを作成し、その後で複数の転送を試みます。
+    // 最後に、各転送が存在するかどうかと、アカウントの状態を確認します。
     try check(
+    // アカウントA1、A2、A3、A4を作成します。初期状態では、どのアカウントも残高は0です。
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1   _ D<C   _ _ _ _ ok
         \\ account A2  0  0  0  0  _  _  _ _ L1 C1   _   _ C<D _ _ _ ok
         \\ account A3  0  0  0  0  _  _  _ _ L1 C1   _   _ C<D _ _ _ ok
         \\ account A4  0  0  0  0  _  _  _ _ L1 C1   _   _   _ _ _ _ ok
         \\ commit create_accounts
         \\
+        // アカウントA1の残高を10に、A2とA3のクレジットを10に設定します。
         \\ setup A1 1  0 0 10
         \\ setup A2 0 10 2  0
         \\ setup A3 0 10 2  0
         \\
+        // 以下の転送を試みます。全ての転送は成功します。
         \\ transfer   T1 A1 A4    0   _  _  _  _    _ L1 C1   _   _   _   _ BDR   _  _ _ ok
         \\ transfer   T2 A4 A2    0   _  _  _  _    _ L1 C1   _   _   _   _   _ BCR  _ _ ok
         \\ transfer   T3 A4 A3    0   _  _  _  _    _ L1 C1   _ PEN   _   _   _ BCR  _ _ ok
         \\ commit create_transfers
         \\
+        // アカウントA1、A2、A3、A4の状態を確認します。
         \\ lookup_account A1 1  9  0 10
         \\ lookup_account A2 0 10  2  8
         \\ lookup_account A3 0 10 10  0
         \\ lookup_account A4 8  8  0  9
         \\ commit lookup_accounts
         \\
+        // 各転送が存在するかどうかを確認します。
         \\ lookup_transfer T1 amount 9
         \\ lookup_transfer T2 amount 8
         \\ lookup_transfer T3 amount 8
@@ -3283,16 +3473,23 @@ test "create_transfers: balancing_debit | balancing_credit (amount=0)" {
 }
 
 test "create_transfers: balancing_debit & balancing_credit" {
+    // このテストは、転送のバランシングデビットとバランシングクレジットが一定の制限を超えないことを確認します。
+    // 3つのアカウントを作成し、その後で複数の転送を試みます。
+    // 一部の転送は成功し、一部は失敗します。
+    // 最後に、各転送が存在するかどうかと、アカウントの状態を確認します。
     try check(
+    // アカウントA1、A2、A3を作成します。初期状態では、どのアカウントも残高は0です。
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1   _ D<C   _ _ _ _ ok
         \\ account A2  0  0  0  0  _  _  _ _ L1 C1   _   _ C<D _ _ _ ok
         \\ account A3  0  0  0  0  _  _  _ _ L1 C1   _   _   _ _ _ _ ok
         \\ commit create_accounts
         \\
+        // アカウントA1の残高を20に、A2のクレジットを10に、A3のクレジットを99に設定します。
         \\ setup A1 0  0 0 20
         \\ setup A2 0 10 0  0
         \\ setup A3 0 99 0  0
         \\
+        // 以下の転送を試みます。一部の転送は成功し、一部は失敗します。
         \\ transfer   T1 A1 A2    1   _  _  _  _    _ L1 C1   _   _   _   _ BDR BCR  _ _ ok
         \\ transfer   T2 A1 A2   12   _  _  _  _    _ L1 C1   _   _   _   _ BDR BCR  _ _ ok
         \\ transfer   T3 A1 A2    1   _  _  _  _    _ L1 C1   _   _   _   _ BDR BCR  _ _ exceeds_debits
@@ -3300,11 +3497,13 @@ test "create_transfers: balancing_debit & balancing_credit" {
         \\ transfer   T4 A1 A3    1   _  _  _  _    _ L1 C1   _   _   _   _ BDR BCR  _ _ exceeds_credits
         \\ commit create_transfers
         \\
+        // アカウントA1、A2、A3の状態を確認します。
         \\ lookup_account A1 0 20 0 20
         \\ lookup_account A2 0 10 0 10
         \\ lookup_account A3 0 99 0 10
         \\ commit lookup_accounts
         \\
+        // 各転送が存在するかどうかを確認します。
         \\ lookup_transfer T1 amount  1
         \\ lookup_transfer T2 amount  9
         \\ lookup_transfer T3 amount 10
@@ -3314,27 +3513,41 @@ test "create_transfers: balancing_debit & balancing_credit" {
 }
 
 test "create_transfers: balancing_debit/balancing_credit + pending" {
+    // このテストは、複数の転送を作成し、それらが正しく処理されることを確認します。
+    // また、クレジットを超える転送が拒否されることも確認します。
+
+    // アカウントA1とA2を作成します。
     try check(
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1   _ D<C   _ _ _ _ ok
         \\ account A2  0  0  0  0  _  _  _ _ L1 C1   _   _ C<D _ _ _ ok
         \\ commit create_accounts
         \\
+
+        // アカウントA1に10のクレジットを、アカウントA2に10のデビットを設定します。
         \\ setup A1 0  0 0 10
         \\ setup A2 0 10 0  0
         \\
+
+        // アカウントA1からA2への転送を3つ作成します。最後の転送はクレジットを超えるため、エラーになります。
         \\ transfer   T1 A1 A2    3   _  _  _  _    _ L1 C1   _ PEN   _   _ BDR   _  _ _ ok
         \\ transfer   T2 A1 A2   13   _  _  _  _    _ L1 C1   _ PEN   _   _ BDR   _  _ _ ok
         \\ transfer   T3 A1 A2    1   _  _  _  _    _ L1 C1   _ PEN   _   _ BDR   _  _ _ exceeds_credits
         \\ commit create_transfers
         \\
+
+        // アカウントA1とA2の状態を確認します。
         \\ lookup_account A1 10  0  0 10
         \\ lookup_account A2  0 10 10  0
         \\ commit lookup_accounts
         \\
+
+        // さらに2つの転送を作成します。これらは前の転送に依存します。
         \\ transfer   T3 A1 A2    0  T1  _  _  _    _ L1 C1   _   _ POS   _   _   _  _ _ ok
         \\ transfer   T4 A1 A2    5  T2  _  _  _    _ L1 C1   _   _ POS   _   _   _  _ _ ok
         \\ commit create_transfers
         \\
+
+        // すべての転送の金額を確認します。
         \\ lookup_transfer T1 amount  3
         \\ lookup_transfer T2 amount  7
         \\ lookup_transfer T3 amount  3
@@ -3344,17 +3557,25 @@ test "create_transfers: balancing_debit/balancing_credit + pending" {
 }
 
 test "get_account_transfers: single-phase" {
+    // このテストは、アカウント間の転送を作成し、それらが正しく記録されることを確認します。
+    // さらに、特定のアカウントに関連する転送を取得し、それらが正しい順序で返されることを確認します。
+
+    // アカウントA1とA2を作成します。
     try check(
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1   _ _ _ HIST _ _ ok
         \\ account A2  0  0  0  0  _  _  _ _ L1 C1   _ _ _ HIST _ _ ok
         \\ commit create_accounts
         \\
+
+        // アカウントA1からA2へ、そしてA2からA1への転送を作成します。
         \\ transfer T1 A1 A2   10   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _ ok
         \\ transfer T2 A2 A1   11   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _ ok
         \\ transfer T3 A1 A2   12   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _ ok
         \\ transfer T4 A2 A1   13   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _ ok
         \\ commit create_transfers
         \\
+
+        // アカウントA1に関連するすべての転送を取得します。
         \\ get_account_transfers A1 _ _ 10 DR CR  _ // Debits + credits, chronological.
         \\ get_account_transfers_result T1 A1 A2   10   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _
         \\ get_account_transfers_result T2 A2 A1   11   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _
@@ -3362,26 +3583,36 @@ test "get_account_transfers: single-phase" {
         \\ get_account_transfers_result T4 A2 A1   13   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _
         \\ commit get_account_transfers
         \\
+
+        // アカウントA1に関連する転送を2つだけ取得します。
         \\ get_account_transfers A1  _  _  2 DR CR  _ // Debits + credits, limit=2.
         \\ get_account_transfers_result T1 A1 A2   10   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _
         \\ get_account_transfers_result T2 A2 A1   11   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _
         \\ commit get_account_transfers
         \\
+
+        // アカウントA1に関連する転送を、特定のタイムスタンプ以降で取得します。
         \\ get_account_transfers A1 T3  _ 10 DR CR  _ // Debits + credits, timestamp_min>0.
         \\ get_account_transfers_result T3 A1 A2   12   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _
         \\ get_account_transfers_result T4 A2 A1   13   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _
         \\ commit get_account_transfers
         \\
+
+        // アカウントA1に関連する転送を、特定のタイムスタンプまでで取得します。
         \\ get_account_transfers A1  _ T2 10 DR CR  _ // Debits + credits, timestamp_max>0.
         \\ get_account_transfers_result T1 A1 A2   10   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _
         \\ get_account_transfers_result T2 A2 A1   11   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _
         \\ commit get_account_transfers
         \\
+
+        // アカウントA1に関連する転送を、特定のタイムスタンプ範囲で取得します。
         \\ get_account_transfers A1 T2 T3 10 DR CR  _ // Debits + credits, 0 < timestamp_min ≤ timestamp_max.
         \\ get_account_transfers_result T2 A2 A1   11   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _
         \\ get_account_transfers_result T3 A1 A2   12   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _
         \\ commit get_account_transfers
         \\
+
+        // アカウントA1に関連する転送を、逆順で取得します。
         \\ get_account_transfers A1  _  _ 10 DR CR REV // Debits + credits, reverse-chronological.
         \\ get_account_transfers_result T4 A2 A1   13   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _
         \\ get_account_transfers_result T3 A1 A2   12   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _
@@ -3389,11 +3620,15 @@ test "get_account_transfers: single-phase" {
         \\ get_account_transfers_result T1 A1 A2   10   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _
         \\ commit get_account_transfers
         \\
+
+        // アカウントA1に関連する転送を、デビットのみで取得します。
         \\ get_account_transfers A1  _  _ 10 DR  _  _ // Debits only.
         \\ get_account_transfers_result T1 A1 A2   10   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _
         \\ get_account_transfers_result T3 A1 A2   12   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _
         \\ commit get_account_transfers
         \\
+
+        // アカウントA1に関連する転送を、クレジットのみで取得します。
         \\ get_account_transfers A1  _  _ 10  _ CR  _ // Credits only.
         \\ get_account_transfers_result T2 A2 A1   11   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _
         \\ get_account_transfers_result T4 A2 A1   13   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _
@@ -3402,15 +3637,23 @@ test "get_account_transfers: single-phase" {
 }
 
 test "get_account_transfers: two-phase" {
+    // このテストは、2段階の転送を作成し、それらが正しく記録されることを確認します。
+    // さらに、特定のアカウントに関連する転送を取得し、それらが正しい順序で返されることを確認します。
+
+    // アカウントA1とA2を作成します。
     try check(
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1   _ _ _ HIST _ _ ok
         \\ account A2  0  0  0  0  _  _  _ _ L1 C1   _ _ _ HIST _ _ ok
         \\ commit create_accounts
         \\
+
+        // アカウントA1からA2への2段階の転送を作成します。
         \\ transfer T1 A1 A2    2   _  _  _  _    0 L1 C1   _ PEN   _   _   _   _  _ _ ok
         \\ transfer T2 A1 A2    1  T1  _  _  _    0 L1 C1   _   _ POS   _   _   _  _ _ ok
         \\ commit create_transfers
         \\
+
+        // アカウントA1に関連するすべての転送を取得します。
         \\ get_account_transfers A1 _ _ 10 DR CR  _
         \\ get_account_transfers_result T1 A1 A2    2   _  _  _  _    0 L1 C1   _ PEN   _   _   _   _  _ _
         \\ get_account_transfers_result T2 A1 A2    1  T1  _  _  _    0 L1 C1   _   _ POS   _   _   _  _ _
@@ -3419,27 +3662,43 @@ test "get_account_transfers: two-phase" {
 }
 
 test "get_account_transfers: invalid filter" {
+    // このテストは、無効なフィルタを使用してアカウント転送を取得しようとするシナリオを検証します。
+    // さまざまな無効なフィルタ条件をテストし、それぞれが適切にハンドルされることを確認します。
+
+    // アカウントA1とA2を作成します。
     try check(
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1   _ _ _ _ _ _ ok
         \\ account A2  0  0  0  0  _  _  _ _ L1 C1   _ _ _ _ _ _ ok
         \\ commit create_accounts
         \\
+
+        // アカウントA1からA2への転送を作成します。
         \\ transfer T1 A1 A2    2   _  _  _  _    0 L1 C1   _ PEN   _   _   _   _  _ _ ok
         \\ transfer T2 A1 A2    1  T1  _  _  _    0 L1 C1   _   _ POS   _   _   _  _ _ ok
         \\ commit create_transfers
         \\
+
+        // 存在しないアカウントA3の転送を取得しようとします。結果は空です。
         \\ get_account_transfers A3 _  _  10 DR CR _   // Invalid account.
         \\ commit get_account_transfers                // Empty result.
         \\
+
+        // 無効なフィルタフラグを使用してアカウントA1の転送を取得しようとします。結果は空です。
         \\ get_account_transfers A1 _  _  10 _  _  _   // Invalid filter flags.
         \\ commit get_account_transfers                // Empty result.
         \\
+
+        // timestamp_minがtimestamp_maxより大きい無効なタイムスタンプを使用してアカウントA1の転送を取得しようとします。結果は空です。
         \\ get_account_transfers A1 T2 T1 10 DR CR _   // Invalid timestamp_min > timestamp_max.
         \\ commit get_account_transfers                // Empty result.
         \\
+
+        // 無効な制限を使用してアカウントA1の転送を取得しようとします。結果は空です。
         \\ get_account_transfers A1 _   _  0 DR CR _   // Invalid limit.
         \\ commit get_account_transfers                // Empty result.
         \\
+
+        // 有効なフィルタを使用してアカウントA1の転送を取得します。成功します。
         \\ get_account_transfers A1 _   _ 10 DR CR _   // Success.
         \\ get_account_transfers_result T1 A1 A2    2   _  _  _  _    0 L1 C1   _ PEN   _   _   _   _  _ _
         \\ get_account_transfers_result T2 A1 A2    1  T1  _  _  _    0 L1 C1   _   _ POS   _   _   _  _ _
@@ -3448,17 +3707,25 @@ test "get_account_transfers: invalid filter" {
 }
 
 test "get_account_balances: single-phase" {
+    // このテストは、単一フェーズの転送を使用してアカウントの残高を取得するシナリオを検証します。
+    // さまざまなフィルタ条件と制限をテストし、それぞれが適切にハンドルされることを確認します。
+
+    // アカウントA1とA2を作成します。
     try check(
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1   _ _ _ HIST _ _ ok
         \\ account A2  0  0  0  0  _  _  _ _ L1 C1   _ _ _ HIST _ _ ok
         \\ commit create_accounts
         \\
+
+        // アカウントA1とA2間で複数の転送を作成します。
         \\ transfer T1 A1 A2   10   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _ ok
         \\ transfer T2 A2 A1   11   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _ ok
         \\ transfer T3 A1 A2   12   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _ ok
         \\ transfer T4 A2 A1   13   _  _  _  _    _ L1 C1   _   _   _   _   _   _  _ _ ok
         \\ commit create_transfers
         \\
+
+        // アカウントA1の残高を取得します。デビットとクレジットが含まれ、結果は時系列順です。
         \\ get_account_balances A1 _ _ 10 DR CR  _ // Debits + credits, chronological.
         \\ get_account_balances_result T1 0 10 0  0
         \\ get_account_balances_result T2 0 10 0 11
@@ -3466,26 +3733,36 @@ test "get_account_balances: single-phase" {
         \\ get_account_balances_result T4 0 22 0 24
         \\ commit get_account_balances
         \\
+
+        // アカウントA1の残高を取得します。デビットとクレジットが含まれ、結果は制限=2です。
         \\ get_account_balances A1  _  _  2 DR CR  _ // Debits + credits, limit=2.
         \\ get_account_balances_result T1 0 10 0  0
         \\ get_account_balances_result T2 0 10 0 11
         \\ commit get_account_balances
         \\
+
+        // アカウントA1の残高を取得します。デビットとクレジットが含まれ、timestamp_min>0です。
         \\ get_account_balances A1 T3  _ 10 DR CR  _ // Debits + credits, timestamp_min>0.
         \\ get_account_balances_result T3 0 22 0 11
         \\ get_account_balances_result T4 0 22 0 24
         \\ commit get_account_balances
         \\
+
+        // アカウントA1の残高を取得します。デビットとクレジットが含まれ、timestamp_max>0です。
         \\ get_account_balances A1  _ T2 10 DR CR  _ // Debits + credits, timestamp_max>0.
         \\ get_account_balances_result T1 0 10 0  0
         \\ get_account_balances_result T2 0 10 0 11
         \\ commit get_account_balances
         \\
+
+        // アカウントA1の残高を取得します。デビットとクレジットが含まれ、0 < timestamp_min ≤ timestamp_maxです。
         \\ get_account_balances A1 T2 T3 10 DR CR  _ // Debits + credits, 0 < timestamp_min ≤ timestamp_max.
         \\ get_account_balances_result T2 0 10 0 11
         \\ get_account_balances_result T3 0 22 0 11
         \\ commit get_account_balances
         \\
+
+        // アカウントA1の残高を取得します。デビットとクレジットが含まれ、結果は逆時系列順です。
         \\ get_account_balances A1  _  _ 10 DR CR REV // Debits + credits, reverse-chronological.
         \\ get_account_balances_result T4 0 22 0 24
         \\ get_account_balances_result T3 0 22 0 11
@@ -3493,11 +3770,15 @@ test "get_account_balances: single-phase" {
         \\ get_account_balances_result T1 0 10 0  0
         \\ commit get_account_balances
         \\
+
+        // アカウントA1の残高を取得します。デビットのみが含まれます。
         \\ get_account_balances A1  _  _ 10 DR  _  _ // Debits only.
         \\ get_account_balances_result T1 0 10 0  0
         \\ get_account_balances_result T3 0 22 0 11
         \\ commit get_account_balances
         \\
+
+        // アカウントA1の残高を取得します。クレジットのみが含まれます。
         \\ get_account_balances A1  _  _ 10  _ CR  _ // Credits only.
         \\ get_account_balances_result T2 0 10 0 11
         \\ get_account_balances_result T4 0 22 0 24
@@ -3506,15 +3787,26 @@ test "get_account_balances: single-phase" {
 }
 
 test "get_account_balances: two-phase" {
+    // このテストは、2フェーズの転送を使用してアカウントの残高を取得するシナリオを検証します。
+    // 2フェーズの転送は、転送が完全に確定する前に一時的な状態を持つことが特徴です。
+    // このテストでは、この一時的な状態が適切にハンドルされ、アカウントの残高に反映されることを確認します。
+
+    // アカウントA1とA2を作成します。
     try check(
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1   _ _ _ HIST _ _ ok
         \\ account A2  0  0  0  0  _  _  _ _ L1 C1   _ _ _ HIST _ _ ok
         \\ commit create_accounts
         \\
+
+        // アカウントA1からA2への2フェーズ転送を作成します。
+        // 最初の転送(T1)はペンディング状態で、次の転送(T2)はT1に依存しています。
         \\ transfer T1 A1 A2    1   _  _  _  _    0 L1 C1   _ PEN   _   _   _   _  _ _ ok
         \\ transfer T2 A1 A2    _  T1  _  _  _    0 L1 C1   _   _ POS   _   _   _  _ _ ok
         \\ commit create_transfers
         \\
+
+        // アカウントA1の残高を取得します。デビットとクレジットが含まれます。
+        // この結果は、ペンディング状態の転送とその依存関係を反映しています。
         \\ get_account_balances A1 _ _ 10 DR CR  _
         \\ get_account_balances_result T1 1 0 0 0
         \\ get_account_balances_result T2 0 1 0 0
@@ -3523,30 +3815,50 @@ test "get_account_balances: two-phase" {
 }
 
 test "get_account_balances: invalid filter" {
+    // このテストは、無効なフィルタを使用してアカウントの残高を取得するシナリオを検証します。
+    // 無効なフィルタは、存在しないアカウント、フラグが設定されていないアカウント、無効なフィルタフラグ、
+    // 無効なタイムスタンプ範囲、無効な制限など、さまざまな形を取ることができます。
+    // このテストでは、これらの無効なフィルタが適切にハンドルされ、期待通りの結果が返されることを確認します。
+
+    // アカウントA1とA2を作成します。A1は履歴フラグを持ち、A2は持っていません。
     try check(
         \\ account A1  0  0  0  0  _  _  _ _ L1 C1   _ _ _ HIST _ _ ok
         \\ account A2  0  0  0  0  _  _  _ _ L1 C1   _ _ _    _ _ _ ok
         \\ commit create_accounts
         \\
+
+        // アカウントA1からA2への2つの転送を作成します。
         \\ transfer T1 A1 A2    2   _  _  _  _    0 L1 C1   _   _   _   _   _   _  _ _ ok
         \\ transfer T2 A1 A2    1   _  _  _  _    0 L1 C1   _   _   _   _   _   _  _ _ ok
         \\ commit create_transfers
         \\
+
+        // 存在しないアカウントA3の残高を取得しようとします。結果は空になります。
         \\ get_account_balances A3 _  _  10 DR CR _   // Invalid account.
         \\ commit get_account_balances                // Empty result.
         \\
+
+        // 履歴フラグが設定されていないアカウントA2の残高を取得しようとします。結果は空になります。
         \\ get_account_balances A2 _  _  10 DR CR _   // Account without flags.history.
         \\ commit get_account_balances                // Empty result.
         \\
+
+        // 無効なフィルタフラグを使用してアカウントA1の残高を取得しようとします。結果は空になります。
         \\ get_account_balances A1 _  _  10 _  _  _   // Invalid filter flags.
         \\ commit get_account_balances                // Empty result.
         \\
+
+        // 無効なタイムスタンプ範囲（最小タイムスタンプが最大タイムスタンプよりも大きい）を使用してアカウントA1の残高を取得しようとします。結果は空になります。
         \\ get_account_balances A1 T2 T1 10 DR CR _   // Invalid timestamp_min > timestamp_max.
         \\ commit get_account_balances                // Empty result.
         \\
+
+        // 無効な制限（0）を使用してアカウントA1の残高を取得しようとします。結果は空になります。
         \\ get_account_balances A1 _   _  0 DR CR _   // Invalid limit.
         \\ commit get_account_balances                // Empty result.
         \\
+
+        // 有効なフィルタを使用してアカウントA1の残高を取得します。成功します。
         \\ get_account_balances A1  _  _ 10 DR CR  _  // Success.
         \\ get_account_balances_result T1 0 2 0 0
         \\ get_account_balances_result T2 0 3 0 0
@@ -3555,16 +3867,23 @@ test "get_account_balances: invalid filter" {
 }
 
 test "StateMachine: input_validate" {
+    // このテストは、状態マシンの入力検証機能を検証します。
+    // 具体的には、各操作の入力が有効なサイズであるかどうかを検証します。
+    // これにより、状態マシンが不適切な入力を適切に処理できることを確認します。
+
+    // 状態マシンと操作の型を定義します。
     const StateMachine = StateMachineType(
         @import("testing/storage.zig").Storage,
         global_constants.state_machine_config,
     );
     const Operation = StateMachine.Operation;
 
+    // テスト用の入力バッファを確保します。
     const allocator = std.testing.allocator;
     const input = try allocator.alignedAlloc(u8, 16, 2 * global_constants.message_body_size_max);
     defer allocator.free(input);
 
+    // 各操作に対するイベントを定義します。各イベントは、操作とその入力の最小サイズ、最大サイズ、実際のサイズを指定します。
     const Event = struct { operation: Operation, min: usize, max: usize, size: usize };
     const events = comptime events: {
         var array: []const Event = &.{};
@@ -3617,18 +3936,24 @@ test "StateMachine: input_validate" {
         break :events array;
     };
 
+    // 各イベントに対して、入力検証を行います。
     for (events) |event| {
+        // 入力サイズが0の場合、入力が有効であると期待します。
         try std.testing.expect(StateMachine.input_valid(
             event.operation,
             input[0..0],
         ) == (event.min == 0));
 
+        // イベントのサイズが0の場合、最小サイズと最大サイズも0であることを確認します。
         if (event.size == 0) {
             assert(event.min == 0);
             assert(event.max == 0);
             continue;
         }
 
+        // 入力サイズがイベントのサイズの1倍、最大倍、最大倍+1、3/2倍の場合の入力検証を行います。
+        // 入力サイズがイベントのサイズの1倍と最大倍の場合、入力が有効であると期待します。
+        // 入力サイズがイベントのサイズの最大倍+1と3/2倍の場合、入力が無効であると期待します。
         try std.testing.expect(StateMachine.input_valid(
             event.operation,
             input[0 .. 1 * event.size],
@@ -3649,23 +3974,35 @@ test "StateMachine: input_validate" {
 }
 
 test "StateMachine: Demuxer" {
+    // このテストは、状態マシンのデマルチプレクサ機能を検証します。
+    // 具体的には、生成された結果からランダムなストライドのイベントをデマルチプレクスする機能をテストします。
+    // これにより、状態マシンが複数のイベントを適切に処理できることを確認します。
+    // デマルチプレクサとは、複数のイベントを1つのバッファにエンコードし、それらを個別のイベントにデコードする機能です。
+
+    // 状態マシンを定義します。
     const StateMachine = StateMachineType(
         @import("testing/storage.zig").Storage,
         global_constants.state_machine_config,
     );
 
+    // 乱数生成器を初期化します。
     var prng = std.rand.DefaultPrng.init(42);
+
+    // create_accountsとcreate_transfersの2つの操作についてテストを行います。
     inline for ([_]StateMachine.Operation{
         .create_accounts,
         .create_transfers,
     }) |operation| {
+        // 操作がバッチ処理を許可していることを確認します。
         try expect(StateMachine.batch_logical_allowed.get(operation));
 
+        // 結果の型を定義し、結果の配列を初期化します。
         const Result = StateMachine.Result(operation);
         var results: [@divExact(global_constants.message_body_size_max, @sizeOf(Result))]Result = undefined;
 
+        // 100回の試行を行います。
         for (0..100) |_| {
-            // Generate Result errors to Events at random.
+            // 結果のエラーをランダムにイベントに生成します。
             var reply_len: u32 = 0;
             for (0..results.len) |i| {
                 if (prng.random().boolean()) {
@@ -3674,15 +4011,17 @@ test "StateMachine: Demuxer" {
                 }
             }
 
-            // Demux events of random strides from the generated results.
+            // 生成された結果からランダムなストライドのイベントをデマルチプレクスします。
             var demuxer = StateMachine.DemuxerType(operation).init(mem.sliceAsBytes(results[0..reply_len]));
             const event_count: u32 = @intCast(@max(1, prng.random().uintAtMost(usize, results.len)));
             var event_offset: u32 = 0;
             while (event_offset < event_count) {
+                // イベントのサイズをランダムに決定し、そのサイズのイベントをデコードします。
                 const event_size = @max(1, prng.random().uintAtMost(u32, event_count - event_offset));
                 const reply: []Result = @alignCast(mem.bytesAsSlice(Result, demuxer.decode(event_offset, event_size)));
                 defer event_offset += event_size;
 
+                // デコードされたイベントの結果が正しいことを確認します。
                 for (reply) |*result| {
                     try expectEqual(result.result, .ok);
                     try expect(result.index < event_offset + event_size);
@@ -3693,12 +4032,19 @@ test "StateMachine: Demuxer" {
 }
 
 test "StateMachine: ref all decls" {
+    // このテストは、状態マシンのすべての宣言が参照可能であることを確認します。
+    // これにより、状態マシンの各機能が正しく実装され、利用可能であることを保証します。
+
+    // ストレージタイプをインポートします。
     const Storage = @import("storage.zig").Storage;
+
+    // 状態マシンを定義します。ここでは、メッセージボディの最大サイズ、LSMバッチの倍数、VSR操作の予約数を指定します。
     const StateMachine = StateMachineType(Storage, .{
         .message_body_size_max = 1000 * @sizeOf(Account),
         .lsm_batch_multiple = 1,
         .vsr_operations_reserved = 128,
     });
 
+    // 状態マシンのすべての宣言が参照可能であることを確認します。
     std.testing.refAllDecls(StateMachine);
 }

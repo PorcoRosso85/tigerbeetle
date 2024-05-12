@@ -423,6 +423,12 @@ fn TestContext(comptime streams_max: u32) type {
 }
 
 test "k_way_merge: unit" {
+    // このテストは、k_way_merge関数が正しく動作することを検証します。
+    // k_way_merge関数は、複数の配列をマージして、昇順または降順でソートされた配列を返すための機能を提供します。
+    // 昇順と降順の両方のソート順序で、複数の配列をマージする機能をテストします。
+
+    // 昇順で単一の配列をマージします。
+    // ここでは、単一の配列を昇順でソートしてマージします。
     try TestContext(1).merge(
         .ascending,
         &[_][]const u32{
@@ -435,6 +441,9 @@ test "k_way_merge: unit" {
             .{ .key = 8, .version = 0 },
         },
     );
+
+    // 降順で単一の配列をマージします。
+    // ここでは、単一の配列を降順でソートしてマージします。
     try TestContext(1).merge(
         .descending,
         &[_][]const u32{
@@ -447,6 +456,9 @@ test "k_way_merge: unit" {
             .{ .key = 0, .version = 0 },
         },
     );
+
+    // 昇順で複数の配列をマージします。
+    // ここでは、複数の配列を昇順でソートしてマージします。
     try TestContext(3).merge(
         .ascending,
         &[_][]const u32{
@@ -467,6 +479,9 @@ test "k_way_merge: unit" {
             .{ .key = 15, .version = 1 },
         },
     );
+
+    // 降順で複数の配列をマージします。
+    // ここでは、複数の配列を降順でソートしてマージします。
     try TestContext(3).merge(
         .descending,
         &[_][]const u32{
@@ -490,11 +505,23 @@ test "k_way_merge: unit" {
 }
 
 test "k_way_merge: fuzz" {
+    // このテストは、k_way_merge関数がランダムな入力に対して正しく動作することを検証します。
+    // ランダムなシードを使用してテストコンテキストを初期化し、そのコンテキストでfuzzテストを実行します。
+
+    // ランダムなシードを生成します。
+    // ここでは、std.crypto.random.int関数を使用してランダムなシードを生成しています。
     const seed = std.crypto.random.int(u64);
+
+    // テストが失敗した場合にシードを表示します。
+    // errdeferを使用して、テストが失敗した場合にシードを表示するように設定します。
     errdefer std.debug.print("\nTEST FAILED: seed = {}\n", .{seed});
 
+    // ランダムな数値を生成するためのPRNGを初期化します。
+    // ここでは、生成したシードを使用してPRNGを初期化しています。
     var prng = std.rand.DefaultPrng.init(seed);
     const random = prng.random();
 
+    // fuzzテストを実行します。
+    // ここでは、生成したランダムな数値を使用してfuzzテストを実行しています。
     try TestContext(32).fuzz(random, 256);
 }

@@ -1214,8 +1214,15 @@ pub fn TestContext(
 }
 
 test "ManifestLevel" {
+    // このテストは、異なるオプションを持つマニフェストレベルの動作を検証します。
+    // level: A collection of on-disk tables, numbering between 0 and config.lsm_levels - 1 (usually config.lsm_levels = 7).
+    // manifest: Index of table and level metadata; one per tree.
+    // マニフェストレベルとは、LSMツリーの各レベルに対応するテーブルのコレクションです。
+    // ここでは、異なるノードサイズ、キータイプ、テーブルカウントの最大値を持つオプションを使用して、マニフェストレベルの初期化と実行をテストします。
+
     const seed = 42;
 
+    // 乱数生成器を初期化します。これは、テストコンテキストの初期化に使用されます。
     var prng = std.rand.DefaultPrng.init(seed);
     const random = prng.random();
 
@@ -1225,6 +1232,9 @@ test "ManifestLevel" {
         table_count_max: u32,
     };
 
+    // 異なるオプションを持つマニフェストレベルをテストします。
+    // ここでは、ノードサイズ、キータイプ、テーブルカウントの最大値を変更して、
+    // マニフェストレベルの動作が正しいことを確認します。
     inline for (.{
         Options{ .key_type = u64, .node_size = 256, .table_count_max = 33 },
         Options{ .key_type = u64, .node_size = 256, .table_count_max = 34 },
@@ -1232,6 +1242,8 @@ test "ManifestLevel" {
         Options{ .key_type = u64, .node_size = 512, .table_count_max = 1024 },
         Options{ .key_type = u64, .node_size = 1024, .table_count_max = 1024 },
     }) |options| {
+        // テストコンテキストを初期化し、テストを実行します。
+        // ここでは、テストコンテキストの初期化と解放、およびテストの実行を行います。
         const Context = TestContext(
             options.node_size,
             options.key_type,

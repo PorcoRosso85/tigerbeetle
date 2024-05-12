@@ -75,17 +75,27 @@ pub const IdPermutation = union(enum) {
 };
 
 test "IdPermutation" {
+    // このテストは、IdPermutationの各種類（identity、inversion、zigzag、random）が正しく動作することを確認します。
+    // それぞれのパーミュテーションについて、ランダムな値と特定の範囲の値を使用してテストを行います。
+    // パーミュテーションとは、インデックスをIDに変換する方法のことです。
+    // インデックスとIDの違いは、インデックスは連続した整数であり、IDはパーミュテーションによって変換された整数です。
+    // 変換が必要な理由は、IDを使用してテストを行う際に、IDから元のインデックスを復元できるためです。
+
+    // 乱数生成器を初期化します。これはランダムパーミュテーションとテスト値の生成に使用されます。
     var prng = std.rand.DefaultPrng.init(123);
     const random = prng.random();
 
+    // 各種類のIdPermutationをテストします。
     for ([_]IdPermutation{
         .{ .identity = {} },
         .{ .inversion = {} },
         .{ .zigzag = {} },
         .{ .random = random.int(u64) },
     }) |permutation| {
+        // 20回のテストを行います。
         var i: usize = 0;
         while (i < 20) : (i += 1) {
+            // ランダムな値、連続した値、最大値からの逆順の値を使用してテストを行います。
             const r = random.int(usize);
             try test_id_permutation(permutation, r);
             try test_id_permutation(permutation, i);

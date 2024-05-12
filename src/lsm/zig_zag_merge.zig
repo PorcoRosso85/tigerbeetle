@@ -438,9 +438,14 @@ fn TestContext(comptime streams_max: u32) type {
 }
 
 test "zig_zag_merge: unit" {
+    // このテストは、異なるストリームのマージが正しく行えることを確認します。
+    // マージは、複数のストリームを一つに結合する操作で、結果のストリームは入力ストリームの要素をすべて含みます。
+
     const Context = TestContext(10);
 
     // Equal streams:
+    // 同じ値を持つストリームのマージをテストします。
+    // すべてのストリームが同じ値を持つため、マージ結果も同じ値を持つべきです。
     try Context.merge(
         &[_][]const Context.Value{
             &.{ 1, 2, 3, 4, 5 },
@@ -451,6 +456,8 @@ test "zig_zag_merge: unit" {
     );
 
     // Disjoint streams:
+    // 互いに異なる値を持つストリームのマージをテストします。
+    // すべてのストリームが異なる値を持つため、マージ結果は空であるべきです。
     try Context.merge(
         &[_][]const Context.Value{
             &.{ 1, 3, 5, 7, 9 },
@@ -460,6 +467,8 @@ test "zig_zag_merge: unit" {
     );
 
     // Equal and disjoint streams:
+    // 同じ値と異なる値を持つストリームのマージをテストします。
+    // 一部のストリームが同じ値を持ち、一部が異なる値を持つため、マージ結果は空であるべきです。
     try Context.merge(
         &[_][]const Context.Value{
             &.{ 1, 3, 5, 7, 9 },
@@ -471,6 +480,8 @@ test "zig_zag_merge: unit" {
     );
 
     // Intersection with an empty stream:
+    // 空のストリームとのマージをテストします。
+    // 空のストリームが含まれているため、マージ結果は空であるべきです。
     try Context.merge(
         &[_][]const Context.Value{
             &.{ 2, 4, 6, 8, 10 },
@@ -492,6 +503,8 @@ test "zig_zag_merge: unit" {
     );
 
     // Intersection with streams of different sizes:
+    // 異なるサイズのストリームのマージをテストします。
+    // ストリームのサイズが異なるため、マージ結果はすべてのストリームで共通する値であるべきです。
     try Context.merge(
         &[_][]const Context.Value{
             // {1, 2, 3, ..., 1000}.
@@ -518,6 +531,8 @@ test "zig_zag_merge: unit" {
     );
 
     // Sparse matching values: {1, 2, 3, ..., 100} ∩ {100, 101, 102, ..., 199} = {100}.
+    // スパースなマッチング値を持つストリームのマージをテストします。
+    // すべてのストリームが一部の値で交差しているため、マージ結果は交差する値であるべきです。
     try Context.merge(
         &[_][]const Context.Value{
             // {1, 2, 3, ..., 100}.
@@ -537,6 +552,8 @@ test "zig_zag_merge: unit" {
     );
 
     // Sparse matching values: {100, 101, 102, ..., 199} ∩ {1, 2, 3, ..., 100}  = {100}.
+    // スパースなマッチング値を持つストリームのマージをテストします。
+    // すべてのストリームが一部の値で交差しているため、マージ結果は交差する値であるべきです。
     try Context.merge(
         &[_][]const Context.Value{
             // {100, 101, 102, ..., 199}.
@@ -557,11 +574,20 @@ test "zig_zag_merge: unit" {
 }
 
 test "zig_zag_merge: fuzz" {
+    // このテストは、ランダムなデータを用いてマージ操作が正しく行えることを確認します。
+    // ファズテストは、ランダムな入力データを用いてプログラムの動作をテストします。
+
+    // ランダムなシード値を生成します。
+    // このシード値は、テストが失敗した場合に表示され、同じランダムな入力データを再現するために使用できます。
     const seed = std.crypto.random.int(u64);
     errdefer std.debug.print("\nTEST FAILED: seed = {}\n", .{seed});
 
+    // 生成したシード値を用いて乱数生成器を初期化します。
+    // この乱数生成器は、テストで使用するランダムなデータを生成するために使用します。
     var prng = std.rand.DefaultPrng.init(seed);
     const random = prng.random();
 
+    // ランダムなデータを用いてマージ操作をテストします。
+    // テストは、32ビットの値を要素とするストリームを対象とし、256回のマージ操作を行います。
     try TestContext(32).fuzz(random, 256);
 }

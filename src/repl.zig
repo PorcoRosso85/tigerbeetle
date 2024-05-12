@@ -935,10 +935,14 @@ const null_printer = Printer{
 };
 
 test "repl.zig: Parser single transfer successfully" {
+    // このテストは、単一の転送が正常に解析されることを検証します。
+    // 3つの異なる転送コマンドをテストし、それぞれが期待通りに解析されることを確認します。
+
     const tests = [_]struct {
         in: []const u8 = "",
         want: tb.Transfer,
     }{
+        // 最初のテストケースでは、最小限の情報を持つ転送を作成します。
         .{
             .in = "create_transfers id=1",
             .want = tb.Transfer{
@@ -957,6 +961,7 @@ test "repl.zig: Parser single transfer successfully" {
                 .timestamp = 0,
             },
         },
+        // 2つ目のテストケースでは、より詳細な情報を持つ転送を作成します。
         .{
             .in =
             \\create_transfers id=32 amount=65 ledger=12 code=9999 pending_id=7
@@ -979,6 +984,7 @@ test "repl.zig: Parser single transfer successfully" {
                 .timestamp = 0,
             },
         },
+        // 3つ目のテストケースでは、すべての可能なフラグを持つ転送を作成します。
         .{
             .in =
             \\create_transfers flags=
@@ -1014,26 +1020,36 @@ test "repl.zig: Parser single transfer successfully" {
         },
     };
 
+    // 各テストケースに対して、以下のステップを実行します。
     for (tests) |t| {
+        // メモリアロケータを作成します。
         var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
         defer arena.deinit();
 
+        // 入力文字列を解析します。
         const statement = try Parser.parse_statement(
             &arena,
             t.in,
             null_printer,
         );
 
+        // 解析結果が期待通りであることを確認します。
         try std.testing.expectEqual(statement.operation, .create_transfers);
         try std.testing.expectEqualSlices(u8, statement.arguments, std.mem.asBytes(&t.want));
     }
 }
 
 test "repl.zig: Parser multiple transfers successfully" {
+    // このテストは、複数の転送が正常に解析されることを検証します。
+    // 1つの入力文字列から複数の転送を作成し、それぞれが期待通りに解析されることを確認します。
+
     const tests = [_]struct {
         in: []const u8 = "",
         want: [2]tb.Transfer,
     }{
+        // テストケースでは、2つの転送を作成します。
+        // 1つ目の転送では、idが1で、debit_account_idが2です。
+        // 2つ目の転送では、idが2で、credit_account_idが1です。
         .{
             .in = "create_transfers id=1 debit_account_id=2, id=2 credit_account_id = 1;",
             .want = [2]tb.Transfer{
@@ -1071,26 +1087,35 @@ test "repl.zig: Parser multiple transfers successfully" {
         },
     };
 
+    // 各テストケースに対して、以下のステップを実行します。
     for (tests) |t| {
+        // メモリアロケータを作成します。
         var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
         defer arena.deinit();
 
+        // 入力文字列を解析します。
         const statement = try Parser.parse_statement(
             &arena,
             t.in,
             null_printer,
         );
 
+        // 解析結果が期待通りであることを確認します。
         try std.testing.expectEqual(statement.operation, .create_transfers);
         try std.testing.expectEqualSlices(u8, statement.arguments, std.mem.sliceAsBytes(&t.want));
     }
 }
 
 test "repl.zig: Parser single account successfully" {
+    // このテストは、単一のアカウントが正常に解析されることを検証します。
+    // 1つの入力文字列から1つのアカウントを作成し、それが期待通りに解析されることを確認します。
+
     const tests = [_]struct {
         in: []const u8,
         want: tb.Account,
     }{
+        // テストケースでは、1つのアカウントを作成します。
+        // アカウントのidは1です。
         .{
             .in = "create_accounts id=1",
             .want = tb.Account{
@@ -1108,6 +1133,8 @@ test "repl.zig: Parser single account successfully" {
                 .flags = .{},
             },
         },
+        // 以下のテストケースでは、複数のフィールドを持つアカウントを作成します。
+        // アカウントのidは32で、credits_postedは344、ledgerは12などです。
         .{
             .in =
             \\create_accounts id=32 credits_posted=344 ledger=12 credits_pending=18
@@ -1129,6 +1156,8 @@ test "repl.zig: Parser single account successfully" {
                 .flags = .{ .linked = true, .debits_must_not_exceed_credits = true },
             },
         },
+        // 以下のテストケースでは、フラグを持つアカウントを作成します。
+        // アカウントのidは1で、フラグには3つの値が設定されています。
         .{
             .in =
             \\create_accounts flags=credits_must_not_exceed_debits|
@@ -1155,27 +1184,35 @@ test "repl.zig: Parser single account successfully" {
         },
     };
 
+    // 各テストケースに対して、以下のステップを実行します。
     for (tests) |t| {
+        // メモリアロケータを作成します。
         var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
         defer arena.deinit();
 
+        // 入力文字列を解析します。
         const statement = try Parser.parse_statement(
             &arena,
             t.in,
             null_printer,
         );
 
+        // 解析結果が期待通りであることを確認します。
         try std.testing.expectEqual(statement.operation, .create_accounts);
         try std.testing.expectEqualSlices(u8, statement.arguments, std.mem.asBytes(&t.want));
     }
 }
 
 test "repl.zig: Parser account filter successfully" {
+    // このテストは、アカウントフィルタが正常に解析されることを検証します。
+    // 1つの入力文字列からアカウントフィルタを作成し、それが期待通りに解析されることを確認します。
+
     const tests = [_]struct {
         in: []const u8,
         operation: Parser.Operation,
         want: tb.AccountFilter,
     }{
+        // テストケースでは、アカウントIDが1のアカウントフィルタを作成します。
         .{
             .in = "get_account_transfers account_id=1",
             .operation = .get_account_transfers,
@@ -1191,6 +1228,8 @@ test "repl.zig: Parser account filter successfully" {
                 },
             },
         },
+        // 以下のテストケースでは、複数のフィールドを持つアカウントフィルタを作成します。
+        // アカウントIDは1000で、フラグには2つの値が設定されています。
         .{
             .in =
             \\get_account_balances account_id=1000
@@ -1213,26 +1252,34 @@ test "repl.zig: Parser account filter successfully" {
         },
     };
 
+    // 各テストケースに対して、以下のステップを実行します。
     for (tests) |t| {
+        // メモリアロケータを作成します。
         var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
         defer arena.deinit();
 
+        // 入力文字列を解析します。
         const statement = try Parser.parse_statement(
             &arena,
             t.in,
             null_printer,
         );
 
+        // 解析結果が期待通りであることを確認します。
         try std.testing.expectEqual(statement.operation, t.operation);
         try std.testing.expectEqualSlices(u8, statement.arguments, std.mem.asBytes(&t.want));
     }
 }
 
 test "repl.zig: Parser multiple accounts successfully" {
+    // このテストは、複数のアカウントが正常に解析されることを検証します。
+    // 1つの入力文字列から複数のアカウントを作成し、それらが期待通りに解析されることを確認します。
+
     const tests = [_]struct {
         in: []const u8,
         want: [2]tb.Account,
     }{
+        // テストケースでは、アカウントIDが1と2の2つのアカウントを作成します。
         .{
             .in = "create_accounts id=1, id=2",
             .want = [2]tb.Account{
@@ -1268,27 +1315,35 @@ test "repl.zig: Parser multiple accounts successfully" {
         },
     };
 
+    // 各テストケースに対して、以下のステップを実行します。
     for (tests) |t| {
+        // メモリアロケータを作成します。
         var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
         defer arena.deinit();
 
+        // 入力文字列を解析します。
         const statement = try Parser.parse_statement(
             &arena,
             t.in,
             null_printer,
         );
 
+        // 解析結果が期待通りであることを確認します。
         try std.testing.expectEqual(statement.operation, .create_accounts);
         try std.testing.expectEqualSlices(u8, statement.arguments, std.mem.sliceAsBytes(&t.want));
     }
 }
 
 test "repl.zig: Parser odd but correct formatting" {
+    // このテストは、一見奇妙だが正しいフォーマットの解析を検証します。
+    // 異なる形式の入力文字列から転送を作成し、それらが期待通りに解析されることを確認します。
+
     const tests = [_]struct {
         in: []const u8 = "",
         want: tb.Transfer,
     }{
         // Space between key-value pair and equality
+        // キーと値のペアと等号の間にスペースがあるケース
         .{
             .in = "create_transfers id = 1",
             .want = tb.Transfer{
@@ -1308,6 +1363,7 @@ test "repl.zig: Parser odd but correct formatting" {
             },
         },
         // Space only before equals sign
+        // 等号の前だけにスペースがあるケース
         .{
             .in = "create_transfers id =1",
             .want = tb.Transfer{
@@ -1327,6 +1383,7 @@ test "repl.zig: Parser odd but correct formatting" {
             },
         },
         // Whitespace before command
+        // コマンドの前に空白があるケース
         .{
             .in = "  \t  \n  create_transfers id=1",
             .want = tb.Transfer{
@@ -1346,6 +1403,7 @@ test "repl.zig: Parser odd but correct formatting" {
             },
         },
         // Trailing semicolon
+        // 末尾にセミコロンがあるケース
         .{
             .in = "create_transfers id=1;",
             .want = tb.Transfer{
@@ -1365,6 +1423,7 @@ test "repl.zig: Parser odd but correct formatting" {
             },
         },
         // Spaces everywhere
+        // スペースがあちこちにあるケース
         .{
             .in =
             \\
@@ -1395,26 +1454,34 @@ test "repl.zig: Parser odd but correct formatting" {
         },
     };
 
+    // 各テストケースに対して、以下のステップを実行します。
     for (tests) |t| {
+        // メモリアロケータを作成します。
         var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
         defer arena.deinit();
 
+        // 入力文字列を解析します。
         const statement = try Parser.parse_statement(
             &arena,
             t.in,
             null_printer,
         );
 
+        // 解析結果が期待通りであることを確認します。
         try std.testing.expectEqual(statement.operation, .create_transfers);
         try std.testing.expectEqualSlices(u8, statement.arguments, std.mem.asBytes(&t.want));
     }
 }
 
 test "repl.zig: Handle parsing errors" {
+    // このテストは、パーサがエラーを適切に処理することを検証します。
+    // 異なる形式の不正な入力文字列から転送を作成し、それらが適切なエラーを引き起こすことを確認します。
+
     const tests = [_]struct {
         in: []const u8 = "",
         err: anyerror,
     }{
+        // 各テストケースは、特定の不正な入力と期待されるエラーを表します。
         .{
             .in = "create_trans",
             .err = error.BadOperation,
@@ -1461,15 +1528,20 @@ test "repl.zig: Handle parsing errors" {
         },
     };
 
+    // 各テストケースに対して、以下のステップを実行します。
     for (tests) |t| {
+        // メモリアロケータを作成します。
         var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
         defer arena.deinit();
 
+        // 入力文字列を解析します。
         const result = Parser.parse_statement(
             &arena,
             t.in,
             null_printer,
         );
+
+        // 解析結果が期待通りのエラーを引き起こすことを確認します。
         try std.testing.expectError(t.err, result);
     }
 }

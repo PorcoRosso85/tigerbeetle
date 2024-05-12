@@ -23,6 +23,7 @@ fn tigerbeetle_exe(shell: *Shell) ![]const u8 {
 }
 
 test "repl integration" {
+    // Context構造体を定義します。これは、シェル、TigerBeetleの実行可能ファイルへのパス、一時的なTigerBeetleインスタンスを保持します。
     const Context = struct {
         const Context = @This();
 
@@ -30,6 +31,7 @@ test "repl integration" {
         tigerbeetle_exe: []const u8,
         tmp_beetle: TmpTigerBeetle,
 
+        // Contextを初期化する関数です。
         fn init() !Context {
             const shell = try Shell.create(std.testing.allocator);
             errdefer shell.destroy();
@@ -48,12 +50,14 @@ test "repl integration" {
             };
         }
 
+        // Contextを解放する関数です。
         fn deinit(context: *Context) void {
             context.tmp_beetle.deinit(std.testing.allocator);
             context.shell.destroy();
             context.* = undefined;
         }
 
+        // REPLコマンドを実行し、その結果を返す関数です。
         fn repl_command(context: *Context, command: []const u8) ![]const u8 {
             return try context.shell.exec_stdout(
                 \\{tigerbeetle} repl --cluster=0 --addresses={addresses} --command={command}
@@ -64,24 +68,29 @@ test "repl integration" {
             });
         }
 
+        // コマンドの結果が期待通りであることを確認する関数です。
         fn check(context: *Context, command: []const u8, want: Snap) !void {
             const got = try context.repl_command(command);
             try want.diff(got);
         }
     };
 
+    // Contextを初期化します。
     var context = try Context.init();
     defer context.deinit();
 
+    // アカウントを作成し、その結果を確認します。
     try context.check(
         \\create_accounts id=1 flags=linked code=10 ledger=700, id=2 code=10 ledger=700
     , snap(@src(), ""));
 
+    // 転送を作成し、その結果を確認します。
     try context.check(
         \\create_transfers id=1 debit_account_id=1
         \\  credit_account_id=2 amount=10 ledger=700 code=10
     , snap(@src(), ""));
 
+    // アカウントを検索し、その結果を確認します。
     try context.check(
         \\lookup_accounts id=1
     , snap(@src(),
@@ -102,6 +111,7 @@ test "repl integration" {
         \\
     ));
 
+    // 別のアカウントを検索し、その結果を確認します。
     try context.check(
         \\lookup_accounts id=2
     , snap(@src(),
@@ -122,6 +132,7 @@ test "repl integration" {
         \\
     ));
 
+    // 転送を検索し、その結果を確認します。
     try context.check(
         \\lookup_transfers id=1
     , snap(@src(),
@@ -145,13 +156,22 @@ test "repl integration" {
 }
 
 test "benchmark smoke" {
+    // このテストは、TigerBeetleのベンチマーク機能を検証します。
+    // 4000回の転送を行うベンチマークを実行し、その結果が成功（ステータスOK）であることを確認します。
+
+    // Shellを作成します。これは、システムコマンドを実行するためのツールです。
     const shell = try Shell.create(std.testing.allocator);
     defer shell.destroy();
 
+    // TigerBeetleの実行可能ファイルへのパスを取得します。
     const tigerbeetle = try tigerbeetle_exe(shell);
+
+    // ベンチマークを実行します。ここでは、4000回の転送を行います。
     const status_ok = try shell.exec_status_ok(
         "{tigerbeetle} benchmark --transfer-count=4000",
         .{ .tigerbeetle = tigerbeetle },
     );
+
+    // ベンチマークの結果が成功（ステータスOK）であることを確認します。
     try std.testing.expect(status_ok);
 }

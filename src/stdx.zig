@@ -29,18 +29,35 @@ pub inline fn div_ceil(numerator: anytype, denominator: anytype) @TypeOf(numerat
 
 test "div_ceil" {
     // Comptime ints.
+    //
+    // このテストは、div_ceil関数が正しく動作することを確認します。
+    // div_ceil関数は、除算の結果を切り上げるための関数です。
+    // このテストでは、コンパイル時の整数とサイズ未定の整数の両方について、div_ceil関数が正しく動作することを確認します。
+
+    // コンパイル時の整数についてテストします。
+    // 0を8で割った結果は0なので、切り上げても0です。
     try std.testing.expectEqual(div_ceil(0, 8), 0);
+    // 1を8で割った結果は0.125なので、切り上げると1になります。
     try std.testing.expectEqual(div_ceil(1, 8), 1);
+    // 7を8で割った結果は0.875なので、切り上げると1になります。
     try std.testing.expectEqual(div_ceil(7, 8), 1);
+    // 8を8で割った結果は1なので、切り上げても1です。
     try std.testing.expectEqual(div_ceil(8, 8), 1);
+    // 9を8で割った結果は1.125なので、切り上げると2になります。
     try std.testing.expectEqual(div_ceil(9, 8), 2);
 
     // Unsized ints
+    // サイズ未定の整数についてテストします。
     const max = std.math.maxInt(u64);
+    // 0を8で割った結果は0なので、切り上げても0です。
     try std.testing.expectEqual(div_ceil(@as(u64, 0), 8), 0);
+    // 1を8で割った結果は0.125なので、切り上げると1になります。
     try std.testing.expectEqual(div_ceil(@as(u64, 1), 8), 1);
+    // 最大値を2で割った結果は最大値の半分になりますが、切り上げると最大値の半分+1になります。
     try std.testing.expectEqual(div_ceil(@as(u64, max), 2), max / 2 + 1);
+    // 最大値-1を2で割った結果は最大値の半分になります。
     try std.testing.expectEqual(div_ceil(@as(u64, max) - 1, 2), max / 2);
+    // 最大値-2を2で割った結果も最大値の半分になります。
     try std.testing.expectEqual(div_ceil(@as(u64, max) - 2, 2), max / 2);
 }
 
@@ -64,11 +81,20 @@ pub inline fn copy_left(
 }
 
 test "copy_left" {
+    // このテストは、copy_left関数が正しく動作することを確認します。
+    // copy_left関数は、配列の一部を左にコピーするための関数です。
+    // このテストでは、copy_left関数が正しく配列の一部を左にシフトできることを確認します。
+
+    // 長さ8の配列を確保します。
     const a = try std.testing.allocator.alloc(usize, 8);
+    // テストが終了したら配列を解放します。
     defer std.testing.allocator.free(a);
 
+    // 配列の各要素にそのインデックスを設定します。
     for (a, 0..) |*v, i| v.* = i;
+    // 配列の3番目の要素から最後の要素までを、配列の1番目の要素からコピーします。
     copy_left(.exact, usize, a[0..6], a[2..]);
+    // コピーが正しく行われ、配列が期待通りの状態になっていることを確認します。
     try std.testing.expect(std.mem.eql(usize, a, &.{ 2, 3, 4, 5, 6, 7, 6, 7 }));
 }
 
@@ -90,11 +116,20 @@ pub inline fn copy_right(
 }
 
 test "copy_right" {
+    // このテストは、copy_right関数が正しく動作することを確認します。
+    // copy_right関数は、配列の一部を右にコピーするための関数です。
+    // このテストでは、copy_right関数が正しく配列の一部を右にシフトできることを確認します。
+
+    // 長さ8の配列を確保します。
     const a = try std.testing.allocator.alloc(usize, 8);
+    // テストが終了したら配列を解放します。
     defer std.testing.allocator.free(a);
 
+    // 配列の各要素にそのインデックスを設定します。
     for (a, 0..) |*v, i| v.* = i;
+    // 配列の最初の要素から6番目の要素までを、配列の3番目の要素からコピーします。
     copy_right(.exact, usize, a[2..], a[0..6]);
+    // コピーが正しく行われ、配列が期待通りの状態になっていることを確認します。
     try std.testing.expect(std.mem.eql(usize, a, &.{ 0, 1, 0, 1, 2, 3, 4, 5 }));
 }
 
@@ -119,24 +154,36 @@ pub inline fn disjoint_slices(comptime A: type, comptime B: type, a: []const A, 
 }
 
 test "disjoint_slices" {
+    // このテストは、disjoint_slices関数が正しく動作することを確認します。
+    // disjoint_slices関数は、2つのスライスが重なっていないことを確認するための関数です。
+    // このテストでは、disjoint_slices関数が正しくスライスが重なっているかどうかを判断できることを確認します。
+
+    // 長さ8のu8型の配列を確保します。
     const a = try std.testing.allocator.alignedAlloc(u8, @sizeOf(u32), 8 * @sizeOf(u32));
+    // テストが終了したら配列を解放します。
     defer std.testing.allocator.free(a);
 
+    // 長さ8のu32型の配列を確保します。
     const b = try std.testing.allocator.alloc(u32, 8);
+    // テストが終了したら配列を解放します。
     defer std.testing.allocator.free(b);
 
+    // aとbが重なっていないことを確認します。
     try std.testing.expectEqual(true, disjoint_slices(u8, u32, a, b));
     try std.testing.expectEqual(true, disjoint_slices(u32, u8, b, a));
 
+    // 同じ配列でも、範囲が重なっていなければtrueを返すことを確認します。
     try std.testing.expectEqual(true, disjoint_slices(u8, u8, a, a[0..0]));
     try std.testing.expectEqual(true, disjoint_slices(u32, u32, b, b[0..0]));
 
+    // 同じ配列の範囲が重なっている場合はfalseを返すことを確認します。
     try std.testing.expectEqual(false, disjoint_slices(u8, u8, a, a[0..1]));
     try std.testing.expectEqual(false, disjoint_slices(u8, u8, a, a[a.len - 1 .. a.len]));
 
     try std.testing.expectEqual(false, disjoint_slices(u32, u32, b, b[0..1]));
     try std.testing.expectEqual(false, disjoint_slices(u32, u32, b, b[b.len - 1 .. b.len]));
 
+    // 異なる型のスライスでも、元のメモリが同じであればfalseを返すことを確認します。
     try std.testing.expectEqual(false, disjoint_slices(u8, u32, a, std.mem.bytesAsSlice(u32, a)));
     try std.testing.expectEqual(false, disjoint_slices(u32, u8, b, std.mem.sliceAsBytes(b)));
 }
@@ -430,14 +477,25 @@ inline fn low_level_hash(seed: u64, input: anytype) u64 {
 }
 
 test "hash_inline" {
+    // このテストは、low_level_hash関数が正しく動作することを確認します。
+    // low_level_hash関数は、入力とシード値からハッシュ値を計算する関数です。
+    // このテストでは、low_level_hash関数が正しくハッシュ値を計算できることを確認します。
+
+    // テストケースを取得します。
     for (@import("testing/low_level_hash_vectors.zig").cases) |case| {
+        // バッファを確保します。
         var buffer: [0x100]u8 = undefined;
 
+        // base64デコーダを作成します。
         const b64 = std.base64.standard;
+        // デコード後のサイズを計算し、その範囲のバッファを入力とします。
         const input = buffer[0..try b64.Decoder.calcSizeForSlice(case.b64)];
+        // base64形式のテストケースをデコードします。
         try b64.Decoder.decode(input, case.b64);
 
+        // low_level_hash関数を使用してハッシュ値を計算します。
         const hash = low_level_hash(case.seed, input);
+        // 計算されたハッシュ値がテストケースの期待値と一致することを確認します。
         try std.testing.expectEqual(case.hash, hash);
     }
 }
@@ -489,11 +547,18 @@ pub fn parse_dirty_semver(dirty_release: []const u8) !std.SemanticVersion {
 }
 
 test "stdx.zig: parse_dirty_semver" {
+    // このテストは、parse_dirty_semver関数が正しく動作することを確認します。
+    // parse_dirty_semver関数は、"dirty"なセマンティックバージョン文字列を解析し、
+    // std.SemanticVersion構造体に変換する関数です。
+    // このテストでは、parse_dirty_semver関数が正しくバージョン情報を解析できることを確認します。
+
+    // テストケースを定義します。
     const SemverTestCase = struct {
         dirty_release: []const u8,
         expected_version: std.SemanticVersion,
     };
 
+    // テストケースの配列を作成します。
     const cases = &[_]SemverTestCase{
         .{
             .dirty_release = "1.2.3",
@@ -512,6 +577,9 @@ test "stdx.zig: parse_dirty_semver" {
             .expected_version = std.SemanticVersion{ .major = 5, .minor = 15, .patch = 90 },
         },
     };
+
+    // 各テストケースについて、parse_dirty_semver関数を実行し、
+    // 結果が期待値と一致することを確認します。
     for (cases) |case| {
         const version = try parse_dirty_semver(case.dirty_release);
         try std.testing.expectEqual(case.expected_version, version);
@@ -596,6 +664,10 @@ pub fn has_unique_representation(comptime T: type) bool {
 
 // Test vectors mostly from upstream, with some added to test the packed struct case.
 test "has_unique_representation" {
+    // このテストは、様々な構造体と共用体が一意の表現を持つかどうかを確認します。
+    // 一意の表現を持つとは、その型のすべての値がメモリ上で一意に表現されることを意味します。
+
+    // TestStruct1はu32型のフィールドを2つ持つ構造体です。これは一意の表現を持つはずです。
     const TestStruct1 = struct {
         a: u32,
         b: u32,
@@ -603,6 +675,7 @@ test "has_unique_representation" {
 
     try std.testing.expect(has_unique_representation(TestStruct1));
 
+    // TestStruct2はu32とu16型のフィールドを持つ構造体です。これは一意の表現を持たないはずです。
     const TestStruct2 = struct {
         a: u32,
         b: u16,
@@ -610,6 +683,7 @@ test "has_unique_representation" {
 
     try std.testing.expect(!has_unique_representation(TestStruct2));
 
+    // TestStruct3はu32型のフィールドを2つ持つ構造体です。これは一意の表現を持つはずです。
     const TestStruct3 = struct {
         a: u32,
         b: u32,
@@ -617,14 +691,17 @@ test "has_unique_representation" {
 
     try std.testing.expect(has_unique_representation(TestStruct3));
 
+    // TestStruct4はu8型の配列を持つ構造体です。これは一意の表現を持たないはずです。
     const TestStruct4 = struct { a: []const u8 };
 
     try std.testing.expect(!has_unique_representation(TestStruct4));
 
+    // TestStruct5はTestStruct4型のフィールドを持つ構造体です。これは一意の表現を持たないはずです。
     const TestStruct5 = struct { a: TestStruct4 };
 
     try std.testing.expect(!has_unique_representation(TestStruct5));
 
+    // TestStruct6はu32とu31型のフィールドを持つ構造体です。これは一意の表現を持たないはずです。
     const TestStruct6 = packed struct {
         a: u32,
         b: u31,
@@ -632,6 +709,7 @@ test "has_unique_representation" {
 
     try std.testing.expect(!has_unique_representation(TestStruct6));
 
+    // TestStruct7はu64とTestStruct6型のフィールドを持つ構造体です。これは一意の表現を持たないはずです。
     const TestStruct7 = struct {
         a: u64,
         b: TestStruct6,
@@ -639,6 +717,7 @@ test "has_unique_representation" {
 
     try std.testing.expect(!has_unique_representation(TestStruct7));
 
+    // TestStruct8はu32型のフィールドを2つ持つ構造体です。これは一意の表現を持つはずです。
     const TestStruct8 = packed struct {
         a: u32,
         b: u32,
@@ -646,6 +725,7 @@ test "has_unique_representation" {
 
     try std.testing.expect(has_unique_representation(TestStruct8));
 
+    // TestStruct9はu64とTestStruct8型のフィールドを持つ構造体です。これは一意の表現を持つはずです。
     const TestStruct9 = struct {
         a: u64,
         b: TestStruct8,
@@ -660,6 +740,7 @@ test "has_unique_representation" {
 
     try std.testing.expect(has_unique_representation(TestStruct10));
 
+    // TestUnion1はu32とu16型のフィールドを持つ共用体です。これは一意の表現を持たないはずです。
     const TestUnion1 = packed union {
         a: u32,
         b: u16,
@@ -667,6 +748,7 @@ test "has_unique_representation" {
 
     try std.testing.expect(!has_unique_representation(TestUnion1));
 
+    // TestUnion2はu32とu16型のフィールドを持つ共用体です。これは一意の表現を持たないはずです。
     const TestUnion2 = extern union {
         a: u32,
         b: u16,
@@ -674,6 +756,7 @@ test "has_unique_representation" {
 
     try std.testing.expect(!has_unique_representation(TestUnion2));
 
+    // TestUnion3はu32とu16型のフィールドを持つ共用体です。これは一意の表現を持たないはずです。
     const TestUnion3 = union {
         a: u32,
         b: u16,
@@ -681,6 +764,7 @@ test "has_unique_representation" {
 
     try std.testing.expect(!has_unique_representation(TestUnion3));
 
+    // TestUnion4はu32とu16型のフィールドを持つ共用体です。これは一意の表現を持たないはずです。
     const TestUnion4 = union(enum) {
         a: u32,
         b: u16,
@@ -688,12 +772,16 @@ test "has_unique_representation" {
 
     try std.testing.expect(!has_unique_representation(TestUnion4));
 
+    // 以下の2つのループでは、異なる型の配列が一意の表現を持つかどうかを確認します。
+
     inline for ([_]type{ i0, u8, i16, u32, i64 }) |T| {
         try std.testing.expect(has_unique_representation(T));
     }
     inline for ([_]type{ i1, u9, i17, u33, i24 }) |T| {
         try std.testing.expect(!has_unique_representation(T));
     }
+
+    // 最後に、異なる型のベクトルが一意の表現を持つかどうかを確認します。
 
     try std.testing.expect(!has_unique_representation([]u8));
     try std.testing.expect(!has_unique_representation([]const u8));

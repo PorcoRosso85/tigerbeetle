@@ -193,9 +193,15 @@ fn TreeTableIteratorType(comptime Tree: type) type {
 }
 
 test "ForestTableIterator: refAllDecls" {
+    // このテストは、ForestTableIteratorの全ての宣言が正しく参照できることを検証します。
+    // std.testing.refAllDecls関数を使用して、ForestTableIteratorTypeの全ての宣言が正しく参照できることを確認します。
+
+    // テストに必要なストレージとステートマシンをインポートします。
     const Storage = @import("../testing/storage.zig").Storage;
     const StateMachineType = @import("../testing/state_machine.zig").StateMachineType;
     const StateMachine = StateMachineType(Storage, constants.state_machine_config);
 
+    // ForestTableIteratorTypeの全ての宣言が正しく参照できることを確認します。
+    // ここでは、StateMachine.ForestをForestTableIteratorTypeの引数として指定しています。
     std.testing.refAllDecls(ForestTableIteratorType(StateMachine.Forest));
 }

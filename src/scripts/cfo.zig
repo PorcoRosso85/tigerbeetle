@@ -418,11 +418,16 @@ const SeedRecord = struct {
 };
 
 test "cfo: SeedRecord.merge" {
+    // このテストは、SeedRecord.merge関数の動作を検証します。
+    // SeedRecord.merge関数は、現在のSeedRecord配列と新しいSeedRecord配列をマージし、
+    // 一定のルールに基づいて更新を行います。
+
     const Snap = @import("../testing/snaptest.zig").Snap;
     const snap = Snap.snap;
 
     const T = struct {
         fn check(current: []const SeedRecord, new: []const SeedRecord, want: Snap) !void {
+            // メモリアロケータを初期化し、マージオプションを設定します。
             var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
             defer arena.deinit();
 
@@ -430,18 +435,23 @@ test "cfo: SeedRecord.merge" {
                 .commit_count_max = 2,
                 .seed_count_max = 2,
             };
+            // SeedRecord.merge関数を呼び出し、結果を取得します。
             const got = switch (try SeedRecord.merge(arena.allocator(), options, current, new)) {
                 .up_to_date => current,
                 .updated => |updated| updated,
             };
+            // 取得した結果と期待値を比較します。
             try want.diff_json(got, .{ .whitespace = .indent_2 });
         }
     };
 
+    // 空の現在の配列と新しい配列をマージします。結果は空の配列となります。
     try T.check(&.{}, &.{}, snap(@src(),
         \\[]
     ));
 
+    // 現在の配列には2つのコミットがあり、新しい配列にはそれぞれのコミットに対する新しい失敗があります。
+    // マージ結果は、新しい失敗が追加され、成功が一つ置き換えられることを示しています。
     try T.check(
         &.{
             // First commit, one failure.
@@ -557,6 +567,8 @@ test "cfo: SeedRecord.merge" {
         ),
     );
 
+    // 現在の配列には2つの失敗したコミットがあり、新しい配列には新しい成功したコミットがあります。
+    // マージ結果は、新しい成功したコミットが古い失敗を置き換えることを示しています。
     try T.check(
         &.{
             // Two failing commits.
@@ -621,6 +633,8 @@ test "cfo: SeedRecord.merge" {
     );
 
     // Deduplicates identical seeds
+    // 現在の配列と新しい配列が同じコミットを含んでいます。
+    // マージ結果は、重複したシードが削除されることを示しています。
     try T.check(
         &.{
             .{
@@ -663,6 +677,8 @@ test "cfo: SeedRecord.merge" {
     );
 
     // Prefer older seeds rather than smaller seeds.
+    // 現在の配列には2つの失敗したコミットがあり、新しい配列には新しい失敗したコミットがあります。
+    // マージ結果は、より古いシードがより小さいシードよりも優先されることを示しています。
     try T.check(
         &.{
             .{

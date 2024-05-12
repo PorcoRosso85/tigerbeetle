@@ -1121,9 +1121,17 @@ pub fn GrooveType(
 }
 
 test "Groove" {
+    // このテストは、Grooveとその関連コンテキストが正しく参照できることを検証します。
+    // std.testing.refAllDecls関数を使用して、Groove、Groove.PrefetchWorker、Groove.PrefetchContextの全ての宣言が正しく参照できることを確認します。
+    // groove: A collection of LSM trees, storing objects and their indices.
+    // Grooveとは、TigerBeetleの主要な構造体であり、LSMツリーのコレクションであり、オブジェクトとそのインデックスを格納します。
+
+    // 必要なTransferとStorageをインポートします。
     const Transfer = @import("../tigerbeetle.zig").Transfer;
     const Storage = @import("../storage.zig").Storage;
 
+    // Grooveを定義します。
+    // ここでは、StorageとTransferをGrooveTypeの引数として指定し、各種設定値を指定してGrooveを定義しています。
     const Groove = GrooveType(
         Storage,
         Transfer,
@@ -1156,7 +1164,12 @@ test "Groove" {
         },
     );
 
+    // Grooveの全ての宣言が正しく参照できることを確認します。
     std.testing.refAllDecls(Groove);
+
+    // Groove.PrefetchWorkerの全ての宣言が正しく参照できることを確認します。
     std.testing.refAllDecls(Groove.PrefetchWorker);
+
+    // Groove.PrefetchContextの全ての宣言が正しく参照できることを確認します。
     std.testing.refAllDecls(Groove.PrefetchContext);
 }

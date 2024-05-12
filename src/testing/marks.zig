@@ -16,24 +16,34 @@
 //! exist.
 test "tutorial" {
     // Import by a qualified name.
+    // このテストは、マーク（ログメッセージの特定のインスタンス）が正しく機能することを確認します。
+    // 特に、マークが正しく記録され、期待されるとおりにヒットすることを検証します。
+
+    // マークを含むモジュールをインポートします。
     const marks = @import("./marks.zig");
 
     const production_code = struct {
         // In production code, wrap the logger.
+        // プロダクションコードでは、ロガーをラップします。
         const log = marks.wrap_log(std.log.scoped(.my_module));
 
         fn function_under_test(x: u32) void {
             if (x % 2 == 0) {
                 // Both `log.info` and log.covered.info` are available.
                 // Only second version records coverage.
+                // `log.info`と`log.covered.info`の両方が利用可能です。
+                // ただし、カバレッジを記録するのは後者のバージョンだけです。
                 log.mark.info("x is even (x={})", .{x});
             }
         }
     };
 
     // Create a mark with the `mark` function...
+    // `mark`関数を使用してマークを作成します...
     const mark = marks.check("x is even");
+    // テスト対象の関数を実行します。この関数内でマークが記録されます。
     production_code.function_under_test(92);
+    // マークがヒットしたことを確認します。このステップを忘れないように注意してください！
     try mark.expect_hit(); // ... and don't forget to assert at the end!
 }
 

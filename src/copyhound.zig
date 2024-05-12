@@ -128,12 +128,21 @@ fn extract_function_name(define: []const u8, buf: []u8) ?[]const u8 {
 }
 
 test "extract_function_name" {
+    // このテストは、関数名を抽出する`extract_function_name`関数が正しく動作することを確認します。
+    // 特に、関数定義から関数名を正確に抽出できることを検証します。
+
+    // バッファを定義します。このバッファは、抽出された関数名を格納するために使用されます。
     var buf: [1024]u8 = undefined;
+
+    // `extract_function_name`関数を呼び出し、関数名を抽出します。
+    // ここでは、関数定義から関数名を抽出します。
     const func_name = extract_function_name(
         \\define internal fastcc i64 @".vsr.vsr.clock.ClockType(.vsr.time.Time).monotonic"
         ++
         \\(%.vsr.time.Time* %.0.1.val) unnamed_addr #1 !dbg !71485 {
     , &buf).?;
+
+    // 抽出された関数名が期待される関数名と一致することを確認します。
     try std.testing.expectEqualStrings(".vsr.vsr.clock.ClockType.monotonic", func_name);
 }
 
@@ -168,17 +177,24 @@ fn extract_memcpy_size(memcpy_call: []const u8) ?u32 {
 }
 
 test "extract_memcpy_size" {
+    // このテストは、`extract_memcpy_size`関数が正しく動作することを確認します。
+    // 特に、memcpy操作からコピーされるバイト数を正確に抽出できることを検証します。
+
     const T = struct {
+        // check関数は、与えられた行からmemcpyのサイズを抽出し、期待される値と一致することを確認します。
         fn check(
             line: []const u8,
             want: ?u32,
         ) !void {
+            // `extract_memcpy_size`関数を呼び出し、memcpyのサイズを抽出します。
             const got = extract_memcpy_size(line);
+            // 抽出されたサイズが期待されるサイズと一致することを確認します。
             try std.testing.expectEqual(want, got);
         }
     };
 
     // One argument is a nested expression with a function call.
+    // ネストされた式に関数呼び出しが含まれる引数が1つあります。
     try T.check(
         "  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %0, i8* align 8 bitcast(" ++
             "{ void (i32, %std.os.linux.siginfo_t*, i8*)*," ++
@@ -188,6 +204,7 @@ test "extract_memcpy_size" {
     );
 
     // The argument is `%6` --- a runtime value.
+    // 引数は`%6` --- ランタイム値です。
     try T.check(
         \\   call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 1 %8, i8* align 1 %4, i64 %6, i1 false)
     , 0);

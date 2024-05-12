@@ -589,8 +589,16 @@ pub fn TableType(
 }
 
 test "Table" {
+    // このテストは、TableTypeのインスタンス化とそのBuilderの参照が正しく行えることを確認します。
+    // TableTypeは、キーと値のペアを保持するためのテーブルの型を定義します。
+
+    // CompositeKey型をインポートします。これはテーブルのキーとして使用します。
     const CompositeKey = @import("composite_key.zig").CompositeKeyType(u128);
 
+    // TableTypeをインスタンス化します。キーとしてCompositeKey.Keyを、値としてCompositeKeyを使用します。
+    // また、キーから値を取得する関数、センチネルキーを取得する関数、tombstone墓石を取得する関数、
+    // キーからtombstone墓石を取得する関数をそれぞれ指定します。
+    // 最後に、テーブルのモードを.generalとします。
     const Table = TableType(
         CompositeKey.Key,
         CompositeKey,
@@ -602,5 +610,6 @@ test "Table" {
         .general,
     );
 
+    // TableのBuilderの全ての宣言を参照します。これにより、Builderが正しく定義されていることを確認します。
     std.testing.refAllDecls(Table.Builder);
 }

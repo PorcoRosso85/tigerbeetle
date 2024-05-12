@@ -32,16 +32,23 @@ const configs = [_]BitSetConfig{
 var prng = std.rand.DefaultPrng.init(42);
 
 test "benchmark: ewah" {
+    // このテストは、EWAH (Enhanced Word-Aligned Hybrid) ビットセットのエンコードとデコードのパフォーマンスをベンチマークします。
+    // さまざまな設定でビットセットを作成し、それらをエンコードおよびデコードし、その時間を測定します。
+    // また、圧縮率も計算します。
+
     for (configs) |config| {
+        // メモリアロケータを初期化します。
         var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
         defer arena.deinit();
 
         const allocator = arena.allocator();
         var i: usize = 0;
+        // ビットセット、エンコードされたビットセット、デコードされたビットセット、およびビットセットの長さを格納する配列を定義します。
         var bitsets: [samples][]usize = undefined;
         var bitsets_encoded: [samples][]align(@alignOf(usize)) u8 = undefined;
         var bitsets_decoded: [samples][]usize = undefined;
         var bitset_lengths: [samples]usize = undefined;
+        // ビットセットを作成し、それらをエンコードおよびデコードします。
         while (i < samples) : (i += 1) {
             bitsets[i] = try make_bitset(allocator, config);
             bitsets_encoded[i] = try allocator.alignedAlloc(
@@ -53,36 +60,44 @@ test "benchmark: ewah" {
         }
 
         // Benchmark encoding.
+        // エンコードのベンチマークを開始します。
         var encode_timer = try std.time.Timer.start();
         i = 0;
         while (i < samples) : (i += 1) {
             var j: usize = 0;
             var size: usize = undefined;
+            // 各ビットセットをエンコードします。
             while (j < repeats) : (j += 1) {
                 size = ewah.encode_all(bitsets[i], bitsets_encoded[i]);
             }
             bitset_lengths[i] = size;
         }
+        // エンコード時間を計算します。
         const encode_time = encode_timer.read() / samples / repeats;
 
+        // デコードのベンチマークを開始します。
         var decode_timer = try std.time.Timer.start();
         // Benchmark decoding.
         i = 0;
         while (i < samples) : (i += 1) {
             const bitset_encoded = bitsets_encoded[i][0..bitset_lengths[i]];
             var j: usize = 0;
+            // 各ビットセットをデコードします。
             while (j < repeats) : (j += 1) {
                 _ = ewah.decode_all(bitset_encoded, bitsets_decoded[i]);
             }
         }
+        // デコード時間を計算します。
         const decode_time = decode_timer.read() / samples / repeats;
 
+        // エンコードとデコードが正しく行われたことを確認します。
         i = 0;
         while (i < samples) : (i += 1) {
             assert(std.mem.eql(usize, bitsets[i], bitsets_decoded[i]));
         }
 
         // Compute compression ratio.
+        // 圧縮率を計算します。
         var total_uncompressed: f64 = 0.0;
         var total_compressed: f64 = 0.0;
         i = 0;
@@ -91,6 +106,7 @@ test "benchmark: ewah" {
             total_compressed += @as(f64, @floatFromInt(bitset_lengths[i]));
         }
 
+        // ベンチマーク結果をログに出力します。
         log.info(
             \\Words={:_>3} E(Run)={:_>3} E(Literal)={:_>3} EncTime={:_>6}ns DecTime={:_>6}ns Ratio={d:_>6.2}
         , .{

@@ -66,15 +66,23 @@ const configs = [_]Options{
 };
 
 test "benchmark: segmented array" {
+    // このテストは、セグメンテッド配列のベンチマークを行います。
+    // セグメンテッド配列は、データを一定のサイズのセグメントに分割して格納するデータ構造です。
+    // このテストでは、異なる設定でセグメンテッド配列を作成し、そのパフォーマンスを測定します。
+    //
+    // 乱数生成器の初期化
     var prng = std.rand.DefaultPrng.init(42);
 
+    // 設定の配列をループして、各設定でテストを実行
     inline for (configs) |options| {
+        // キーと値の型を設定
         const Key = options.Key;
         const Value = struct {
             key: Key,
             padding: [options.value_size - @sizeOf(Key)]u8,
         };
 
+        // ノードプールとセグメンテッド配列の型を設定
         const NodePool = NodePoolType(options.node_size, @alignOf(Value));
         const SegmentedArray = SortedSegmentedArray(
             Value,
@@ -94,16 +102,18 @@ test "benchmark: segmented array" {
             .{ .verify = false },
         );
 
+        // メモリアロケータの初期化
         var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
         defer arena.deinit();
         const allocator = arena.allocator();
 
+        // ノードプールとセグメンテッド配列の初期化
         var node_pool = try NodePool.init(allocator, SegmentedArray.node_count_max);
         defer node_pool.deinit(allocator);
-
         var array = try SegmentedArray.init(allocator);
         defer array.deinit(allocator, &node_pool);
 
+        // セグメンテッド配列にランダムな値を挿入
         var i: usize = 0;
         while (i < options.value_count) : (i += 1) {
             _ = array.insert_element(&node_pool, .{
@@ -112,19 +122,24 @@ test "benchmark: segmented array" {
             });
         }
 
+        // クエリの配列をシャッフルして生成
         const queries = try alloc_shuffled_index(allocator, options.value_count, prng.random());
         defer allocator.free(queries);
 
+        // タイマーの開始と繰り返し回数の設定
         var timer = try std.time.Timer.start();
         const repetitions = @max(1, @divFloor(samples, queries.len));
+
+        // 各クエリに対して検索を行い、結果を最適化から保護
         var j: usize = 0;
         while (j < repetitions) : (j += 1) {
             for (queries) |query| {
                 std.mem.doNotOptimizeAway(array.absolute_index_for_cursor(array.search(query)));
             }
         }
-        const time = timer.read() / repetitions / queries.len;
 
+        // 経過時間の計測とログ出力
+        const time = timer.read() / repetitions / queries.len;
         log.info("KeyType={} ValueCount={:_>7} ValueSize={:_>2}B NodeSize={:_>6}B LookupTime={:_>6}ns", .{
             options.Key,
             options.value_count,

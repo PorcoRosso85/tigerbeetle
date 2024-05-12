@@ -779,20 +779,27 @@ const Snap = @import("./testing/snaptest.zig").Snap;
 const snap = Snap.snap;
 
 test "shell: expand_argv" {
+    // このテストは、shellのexpand_argv関数の動作を検証します。
+    // expand_argv関数がコマンドライン引数を正しく展開できることを確認します。
+
     const T = struct {
         fn check(
             comptime cmd: []const u8,
             args: anytype,
             want: Snap,
         ) !void {
+            // Argvを初期化します。
             var argv = Argv.init(std.testing.allocator);
             defer argv.deinit();
 
+            // expand_argv関数を使用して、コマンドライン引数を展開します。
             try expand_argv(&argv, cmd, args);
+            // 展開された引数が期待通りであることを確認します。
             try want.diff_json(argv.slice(), .{});
         }
     };
 
+    // 空白を含むコマンドライン引数の展開をテストします。
     try T.check("zig version", .{}, snap(@src(),
         \\["zig","version"]
     ));
@@ -800,6 +807,7 @@ test "shell: expand_argv" {
         \\["zig","version"]
     ));
 
+    // プレースホルダを含むコマンドライン引数の展開をテストします。
     try T.check(
         "zig {version}",
         .{ .version = @as([]const u8, "version") },
@@ -808,6 +816,7 @@ test "shell: expand_argv" {
         ),
     );
 
+    // 複数のプレースホルダを含むコマンドライン引数の展開をテストします。
     try T.check(
         "zig {version}",
         .{ .version = @as([]const []const u8, &.{ "version", "--verbose" }) },

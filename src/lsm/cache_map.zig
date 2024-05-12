@@ -350,10 +350,16 @@ pub const TestCacheMap = CacheMapType(
 );
 
 test "cache_map: unit" {
+    // このテストは、キャッシュマップの基本的な動作を検証します。
+    // キャッシュマップの初期化、アップサート、取得、スコープの開閉、削除などの基本的な動作が正しく行われることを確認します。
+    // キャッシュマップとは、キャッシュとマップの両方の機能を持つデータ構造です。
+
     const testing = std.testing;
 
     const allocator = testing.allocator;
 
+    // キャッシュマップを初期化します。
+    // ここでは、キャッシュ値の最大数、スコープ値の最大数、マップ値の最大数、名前を指定して初期化します。
     var cache_map = try TestCacheMap.init(allocator, .{
         .cache_value_count_max = 2048,
         .scope_value_count_max = 32,
@@ -362,10 +368,14 @@ test "cache_map: unit" {
     });
     defer cache_map.deinit(allocator);
 
+    // キーと値をアップサート（存在しなければ挿入、存在すれば更新）します。
+    // ここでは、キーと値として1を指定しています。
     cache_map.upsert(&.{ .key = 1, .value = 1, .tombstone = false });
     try testing.expectEqual(.{ .key = 1, .value = 1, .tombstone = false }, cache_map.get(1).?.*);
 
     // Test scope persisting
+    // スコープを開き、キーと値をアップサートし、スコープを閉じて（永続化して）値を確認します。
+    // ここでは、キーと値として2を指定しています。
     cache_map.scope_open();
     cache_map.upsert(&.{ .key = 2, .value = 2, .tombstone = false });
     try testing.expectEqual(.{ .key = 2, .value = 2, .tombstone = false }, cache_map.get(2).?.*);
@@ -373,6 +383,8 @@ test "cache_map: unit" {
     try testing.expectEqual(.{ .key = 2, .value = 2, .tombstone = false }, cache_map.get(2).?.*);
 
     // Test scope discard on updates
+    // スコープを開き、同じキーで異なる値をアップサートし、スコープを閉じて（破棄して）元の値が保持されていることを確認します。
+    // ここでは、キーとして2、値として22、222、2222を順に指定しています。
     cache_map.scope_open();
     cache_map.upsert(&.{ .key = 2, .value = 22, .tombstone = false });
     cache_map.upsert(&.{ .key = 2, .value = 222, .tombstone = false });
@@ -385,6 +397,8 @@ test "cache_map: unit" {
     try testing.expectEqual(.{ .key = 2, .value = 2, .tombstone = false }, cache_map.get(2).?.*);
 
     // Test scope discard on inserts
+    // スコープを開き、新しいキーと値をアップサートし、スコープを閉じて（破棄して）値が存在しないことを確認します。
+    // ここでは、キーとして3、値として3と33を順に指定しています。
     cache_map.scope_open();
     cache_map.upsert(&.{ .key = 3, .value = 3, .tombstone = false });
     try testing.expectEqual(.{ .key = 3, .value = 3, .tombstone = false }, cache_map.get(3).?.*);
@@ -395,6 +409,8 @@ test "cache_map: unit" {
     assert(cache_map.get(3) == null);
 
     // Test scope discard on removes
+    // スコープを開き、キーを削除し、スコープを閉じて（破棄して）元の値が保持されていることを確認します。
+    // ここでは、キーとして2を指定して削除しています。
     cache_map.scope_open();
     cache_map.remove(2);
     assert(!cache_map.has(2));

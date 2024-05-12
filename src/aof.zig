@@ -582,26 +582,39 @@ pub fn aof_merge(
 const testing = std.testing;
 
 test "aof write / read" {
+    // このテストは、AOF(Append Only File)への書き込みと読み込みが正しく行われることを確認します。
+    // 特に、メッセージの書き込み後に同じメッセージが正確に読み込まれること、そしてイテレータがEOFで正しく停止することを検証します。
+    // EOFとは、ファイルの終端を示す特別なマーカーです。 EOFに達すると、イテレータは次のエントリを読み込むことができなくなります。
+
+    // テスト用のAOFファイルを作成します。既存の同名ファイルがある場合は削除します。
     const aof_file = "./test.aof";
     std.fs.cwd().deleteFile(aof_file) catch {};
     defer std.fs.cwd().deleteFile(aof_file) catch {};
 
     const allocator = std.testing.allocator;
 
+    // AOFファイルを開きます。
     var aof = try AOF.from_absolute_path(aof_file);
 
+    // メッセージプールを初期化します。このプールからメッセージを取得して使用します。
     var message_pool = try MessagePool.init_capacity(allocator, 2);
     defer message_pool.deinit(allocator);
 
+    // デモメッセージを取得します。
     const demo_message = message_pool.get_message(.prepare);
     defer message_pool.unref(demo_message);
 
+    // AOFエントリのターゲットを作成します。
+    // ターゲットとは、AOFファイルに書き込むエントリの型です。
     const target = try allocator.create(AOFEntry);
     defer allocator.destroy(target);
 
+    // デモメッセージのペイロードを設定します。
+    // ペイロードは、メッセージのボディ部分に含まれるデータです。
     const demo_payload = "hello world";
 
     // The command / operation used here don't matter - we verify things bitwise.
+    // デモメッセージのヘッダーを設定します。ここでは、操作の種類やサイズなどを設定します。
     demo_message.header.* = .{
         .op = 0,
         .commit = 0,
@@ -619,31 +632,39 @@ test "aof write / read" {
         .size = @intCast(@sizeOf(Header) + demo_payload.len),
     };
 
+    // デモメッセージのボディにペイロードをコピーします。
     stdx.copy_disjoint(.exact, u8, demo_message.body(), demo_payload);
     demo_message.header.set_checksum_body(demo_payload);
     demo_message.header.set_checksum();
 
+    // デモメッセージをAOFファイルに書き込みます。
     try aof.write(demo_message, .{ .replica = 1, .primary = 1 });
     aof.close();
 
+    // AOFファイルから読み込むためのイテレータを作成します。
     var it = try AOF.iterator(aof_file);
     defer it.close();
 
+    // イテレータを使ってAOFファイルからエントリを読み込みます。
     const read_entry = (try it.next(target)).?;
 
     // Check that to_message also works as expected
+    // 読み込んだエントリをメッセージに変換します。
     const read_message = message_pool.get_message(.prepare);
     defer message_pool.unref(read_message);
 
     read_entry.to_message(read_message);
+    // デモメッセージと読み込んだメッセージが一致することを確認します。
     try testing.expect(std.mem.eql(
         u8,
         demo_message.buffer[0..demo_message.header.size],
         read_message.buffer[0..read_message.header.size],
     ));
 
+    // メタデータが正しく読み込まれたことを確認します。
     try testing.expect(read_entry.metadata.replica == 1);
     try testing.expect(read_entry.metadata.primary == 1);
+    // デモメッセージと読み込んだエントリのメッセージ部分が一致することを確認します。
     try testing.expect(std.mem.eql(
         u8,
         demo_message.buffer[0..demo_message.header.size],
@@ -651,6 +672,7 @@ test "aof write / read" {
     ));
 
     // Ensure our iterator works correctly and stops at EOF.
+    // イテレータがEOFで正しく停止することを確認します。
     try testing.expect((try it.next(target)) == null);
 }
 

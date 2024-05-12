@@ -138,32 +138,42 @@ pub const ReleaseTriple = extern struct {
 };
 
 test "ReleaseTriple.parse" {
+    // このテストは、ReleaseTriple.parse関数が正しく動作することを確認します。
+    // この関数は、リリースバージョンの文字列をパースして、メジャー、マイナー、パッチのバージョン番号を取得します。
+
     // 文字列パーステスト
     // 有効なリリースバージョン文字列
     // 無効な文字や区切り文字、オーバーフローするバージョン番号などのエラーケースをテスト
+
+    // テストケースを定義します。各テストケースは、パースする文字列と期待する結果を含みます。
     const tests = [_]struct {
         string: []const u8,
         result: error{InvalidRelease}!ReleaseTriple,
     }{
         // Valid:
+        // 有効なバージョン文字列のテストケース
         .{ .string = "0.0.1", .result = .{ .major = 0, .minor = 0, .patch = 1 } },
         .{ .string = "0.1.0", .result = .{ .major = 0, .minor = 1, .patch = 0 } },
         .{ .string = "1.0.0", .result = .{ .major = 1, .minor = 0, .patch = 0 } },
 
         // Invalid characters:
         .{ .string = "v0.0.1", .result = error.InvalidRelease },
+        // 無効な文字を含むバージョン文字列のテストケース
         .{ .string = "0.0.1v", .result = error.InvalidRelease },
         // Invalid separators:
         .{ .string = "0.0.0.1", .result = error.InvalidRelease },
+        // 無効な区切り文字を含むバージョン文字列のテストケース
         .{ .string = "0..0.1", .result = error.InvalidRelease },
         // Overflow (and near-overflow):
         .{ .string = "0.0.255", .result = .{ .major = 0, .minor = 0, .patch = 255 } },
+        // オーバーフローするバージョン番号を含むバージョン文字列のテストケース
         .{ .string = "0.0.256", .result = error.InvalidRelease },
         .{ .string = "0.255.0", .result = .{ .major = 0, .minor = 255, .patch = 0 } },
         .{ .string = "0.256.0", .result = error.InvalidRelease },
         .{ .string = "65535.0.0", .result = .{ .major = 65535, .minor = 0, .patch = 0 } },
         .{ .string = "65536.0.0", .result = error.InvalidRelease },
     };
+    // 各テストケースについて、ReleaseTriple.parse関数を実行し、結果が期待する値と一致することを確認します。
     for (tests) |t| {
         try std.testing.expectEqualDeep(ReleaseTriple.parse(t.string), t.result);
     }

@@ -302,24 +302,33 @@ pub fn ewah(comptime Word: type) type {
 }
 
 test "ewah encode→decode cycle" {
+    // このテストは、EWAH (Enhanced Word-Aligned Hybrid) ビットセットのエンコードとデコードのサイクルを検証します。
+    // さまざまな設定でビットセットを作成し、それらをエンコードしてからデコードし、元のビットセットと一致することを確認します。
+
     const fuzz = @import("./ewah_fuzz.zig");
     var prng = std.rand.DefaultPrng.init(123);
 
+    // さまざまなワードサイズでテストを行います。
     inline for (.{ u8, u16, u32, u64, usize }) |Word| {
+        // さまざまなチャンク数でテストを行います。
         for ([_]usize{ 1, 2, 4, 5, 8, 16, 17, 32 }) |chunk_count| {
             var decoded: [4096]Word = undefined;
 
+            // ファズテストのオプションを設定します。
             const fuzz_options = .{
                 .encode_chunk_words_count = @divFloor(decoded.len, chunk_count),
                 .decode_chunk_words_count = @divFloor(decoded.len, chunk_count),
             };
 
+            // ビットセットを0で初期化し、エンコード→デコードのサイクルをテストします。
             @memset(&decoded, 0);
             try fuzz.fuzz_encode_decode(Word, std.testing.allocator, &decoded, fuzz_options);
 
+            // ビットセットを最大値で初期化し、エンコード→デコードのサイクルをテストします。
             @memset(&decoded, std.math.maxInt(Word));
             try fuzz.fuzz_encode_decode(Word, std.testing.allocator, &decoded, fuzz_options);
 
+            // ビットセットをランダムな値で初期化し、エンコード→デコードのサイクルをテストします。
             prng.random().bytes(std.mem.asBytes(&decoded));
             try fuzz.fuzz_encode_decode(Word, std.testing.allocator, &decoded, fuzz_options);
         }
@@ -327,9 +336,14 @@ test "ewah encode→decode cycle" {
 }
 
 test "ewah Word=u8" {
+    // このテストは、EWAH (Enhanced Word-Aligned Hybrid) ビットセットのエンコードとデコードを検証します。
+    // ここでは、ワードサイズが u8 の場合についてテストを行います。
+
+    // デコードのテストを行います。
     try test_decode_with_word(u8);
 
     const codec = ewah(u8);
+    // ユニフォームワード数を変えながらデコードのテストを行います。
     for (0..math.maxInt(codec.MarkerUniformCount) + 1) |uniform_word_count| {
         try test_decode(u8, &.{
             codec.marker_word(.{
@@ -343,11 +357,17 @@ test "ewah Word=u8" {
         });
     }
 
+    // エンコードサイズが正しく計算されることを確認します。
     try std.testing.expectEqual(codec.encode_size_max(0), 0);
+    // 空のビットセットのエンコードが正しく行われることを確認します。
     try std.testing.expectEqual(codec.encode_all(&.{}, &.{}), 0);
 }
 
 test "ewah Word=u16" {
+    // このテストは、EWAH (Enhanced Word-Aligned Hybrid) ビットセットのエンコードとデコードを検証します。
+    // ここでは、ワードサイズが u16 の場合についてテストを行います。
+
+    // デコードのテストを行います。
     try test_decode_with_word(u16);
 }
 

@@ -60,24 +60,31 @@ pub fn IOPS(comptime T: type, comptime size: u6) type {
 }
 
 test "IOPS" {
+    // このテストは、IOPS (Input/Output Operations Per Second) の動作を検証します。
+    // IOPSは、一定時間内に行われる入出力操作の数を表します。
+
     const testing = std.testing;
     var iops = IOPS(u32, 4){};
 
+    // 初期状態では、利用可能なIOPSは4で、実行中のIOPSは0であることを確認します。
     try testing.expectEqual(@as(usize, 4), iops.available());
     try testing.expectEqual(@as(usize, 0), iops.executing());
 
     var one = iops.acquire().?;
 
+    // 1つのIOPSを取得した後、利用可能なIOPSは3で、実行中のIOPSは1であることを確認します。
     try testing.expectEqual(@as(usize, 3), iops.available());
     try testing.expectEqual(@as(usize, 1), iops.executing());
 
     var two = iops.acquire().?;
     var three = iops.acquire().?;
 
+    // さらに2つのIOPSを取得した後、利用可能なIOPSは1で、実行中のIOPSは3であることを確認します。
     try testing.expectEqual(@as(usize, 1), iops.available());
     try testing.expectEqual(@as(usize, 3), iops.executing());
 
     var four = iops.acquire().?;
+    // 全てのIOPSを取得した後、利用可能なIOPSは0で、実行中のIOPSは4であることを確認します。
     try testing.expectEqual(@as(?*u32, null), iops.acquire());
 
     try testing.expectEqual(@as(usize, 0), iops.available());
@@ -85,10 +92,12 @@ test "IOPS" {
 
     iops.release(two);
 
+    // 1つのIOPSを解放した後、利用可能なIOPSは1で、実行中のIOPSは3であることを確認します。
     try testing.expectEqual(@as(usize, 1), iops.available());
     try testing.expectEqual(@as(usize, 3), iops.executing());
 
     // there is only one slot free, so we will get the same pointer back.
+    // 利用可能なスロットが1つだけなので、同じポインタが返されることを確認します。
     try testing.expectEqual(@as(?*u32, two), iops.acquire());
 
     iops.release(four);

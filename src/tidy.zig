@@ -10,38 +10,55 @@ const stdx = @import("./stdx.zig");
 const Shell = @import("./shell.zig");
 
 test "tidy" {
+    // このテストは、プロジェクトのソースコードが特定のコーディング規約に従っているかを確認します。
+    // これには、禁止されたコードの存在、行の長さ、未使用のコードの検出などが含まれます。
+
     const allocator = std.testing.allocator;
 
+    // 1MBのバッファを確保します。これは、ファイルの内容を一時的に保持するためのものです。
     const buffer_size = 1024 * 1024;
     const buffer = try allocator.alloc(u8, buffer_size);
     defer allocator.free(buffer);
 
+    // 現在の作業ディレクトリの下の'src'ディレクトリを開きます。
     var src_dir = try fs.cwd().openIterableDir("./src", .{});
     defer src_dir.close();
 
+    // ディレクトリのウォーカーを初期化します。これにより、ディレクトリ内のすべてのファイルを反復処理できます。
     var walker = try src_dir.walk(allocator);
     defer walker.deinit();
 
+    // DeadDetectorを初期化します。これは、未使用のコードを検出するためのものです。
     var dead_detector = DeadDetector.init(allocator);
     defer dead_detector.deinit();
 
     // NB: all checks are intentionally implemented in a streaming fashion, such that we only need
     // to read the files once.
+    // ディレクトリ内のすべてのファイルを反復処理します。
     while (try walker.next()) |entry| {
+        // ファイルが'.zig'で終わる場合のみ、チェックを行います。
         if (entry.kind == .file and mem.endsWith(u8, entry.path, ".zig")) {
+            // ファイルを開きます。
             const file = try entry.dir.openFile(entry.basename, .{});
             defer file.close();
 
+            // ファイルの内容をバッファに読み込みます。
             const bytes_read = try file.readAll(buffer);
+            // ファイルがバッファサイズより大きい場合はエラーを返します。
             if (bytes_read == buffer.len) return error.FileTooLong;
 
+            // ファイルのパスと内容を持つSourceFileオブジェクトを作成します。
             const source_file = SourceFile{ .path = entry.path, .text = buffer[0..bytes_read] };
+            // 禁止されたコードのチェックを行います。
             try tidy_banned(source_file);
+            // 行の長さのチェックを行います。
             try tidy_long_line(source_file);
+            // 未使用のコードのチェックを行います。
             try dead_detector.visit(source_file);
         }
     }
 
+    // 未使用のコードのチェックを完了します。
     try dead_detector.finish();
 }
 
@@ -165,20 +182,30 @@ const DeadDetector = struct {
 };
 
 test "tidy changelog" {
+    // このテストは、プロジェクトのCHANGELOG.mdファイルが特定のコーディング規約に従っているかを確認します。
+    // これには、行末の空白の存在、行の長さのチェックなどが含まれます。
+
     const allocator = std.testing.allocator;
 
+    // CHANGELOG.mdファイルの最大サイズを1MBと定義します。
     const changelog_size_max = 1024 * 1024;
+    // CHANGELOG.mdファイルを読み込み、その内容をchangelogに格納します。
     const changelog = try fs.cwd().readFileAlloc(allocator, "CHANGELOG.md", changelog_size_max);
     defer allocator.free(changelog);
 
+    // ファイルの内容を行ごとに分割します。
     var line_iterator = mem.split(u8, changelog, "\n");
     var line_index: usize = 0;
+    // 各行に対して以下のチェックを行います。
     while (line_iterator.next()) |line| : (line_index += 1) {
+        // 行末に空白が存在するかをチェックします。
         if (std.mem.endsWith(u8, line, " ")) {
             std.debug.print("CHANGELOG.md:{d} trailing whitespace", .{line_index + 1});
             return error.TrailingWhitespace;
         }
+        // 行の長さ（文字数）を計算します。
         const line_length = try std.unicode.utf8CountCodepoints(line);
+        // 行の長さが100文字を超えているか、または行にリンクが含まれていないかをチェックします。
         if (line_length > 100 and !has_link(line)) {
             std.debug.print("CHANGELOG.md:{d} line exceeds 100 columns\n", .{line_index + 1});
             return error.LineTooLong;
@@ -187,24 +214,36 @@ test "tidy changelog" {
 }
 
 test "tidy naughty list" {
+    // このテストは、プロジェクトのソースディレクトリ（"src"）内に、"naughty_list"に記載されたファイルが存在しないことを確認します。
+    // "naughty_list"には、プロジェクト内に存在してはならないファイルのパスが記載されています。
+
+    // 現在の作業ディレクトリの下の'src'ディレクトリを開きます。
     var src = try fs.cwd().openDir("src", .{});
     defer src.close();
 
+    // "naughty_list"に記載された各ファイルについて、以下のチェックを行います。
     for (naughty_list) |naughty_path| {
+        // ファイルが存在するかを確認します。
         _ = src.statFile(naughty_path) catch |err| {
+            // ファイルが存在しない場合は、その旨を出力します。
             if (err == error.FileNotFound) {
                 std.debug.print(
                     "path does not exist: src/{s}\n",
                     .{naughty_path},
                 );
             }
+            // ファイルが存在する場合は、エラーを返します。
             return err;
         };
     }
 }
 
 test "tidy no large blobs" {
+    // このテストは、Gitリポジトリ内に大きなファイル（"blob"）が存在しないことを確認します。
+    // これにより、リポジトリのサイズが不必要に大きくなるのを防ぎます。
+
     const allocator = std.testing.allocator;
+    // Shellインスタンスを作成します。これを使用して、シェルコマンドを実行します。
     const shell = try Shell.create(allocator);
     defer shell.destroy();
 
@@ -214,46 +253,61 @@ test "tidy no large blobs" {
     //
     // Zig's std doesn't provide a cross platform abstraction for piping two commands together, so
     // we begrudgingly pass the data through this intermediary process.
+    // Gitリポジトリが浅い（shallow）かどうかを確認します。浅いリポジトリでは、全ての履歴を持っていないため、大きなファイルを検出できない可能性があります。
     const shallow = try shell.exec_stdout("git rev-parse --is-shallow-repository", .{});
     if (!std.mem.eql(u8, shallow, "false")) {
         return error.ShallowRepository;
     }
 
+    // Gitリポジトリ内の全てのオブジェクト（ファイル）をリストアップします。
     const MiB = 1024 * 1024;
     const rev_list = try shell.exec_stdout_options(
         .{ .max_output_bytes = 50 * MiB },
         "git rev-list --objects HEAD",
         .{},
     );
+    // 各オブジェクトのタイプ（blobなど）、サイズ、パスを取得します。
     const objects = try shell.exec_stdout_options(
         .{ .max_output_bytes = 50 * MiB, .stdin_slice = rev_list },
         "git cat-file --batch-check={format}",
         .{ .format = "%(objecttype) %(objectsize) %(rest)" },
     );
 
+    // 大きなファイルが存在するかどうかを示すフラグを初期化します。
     var has_large_blobs = false;
+    // 各オブジェクトについて、以下のチェックを行います。
     var lines = std.mem.split(u8, objects, "\n");
     while (lines.next()) |line| {
         // Parsing lines like
         //     blob 1032 client/package.json
+        // オブジェクトがblob（ファイル）であるかを確認します。
         var blob = stdx.cut_prefix(line, "blob ") orelse continue;
 
+        // blobのサイズとパスを取得します。
         var cut = stdx.cut(blob, " ").?;
         const size = try std.fmt.parseInt(u64, cut.prefix, 10);
         const path = cut.suffix;
 
+        // 特定のファイルは大きくても許容します。
         if (std.mem.eql(u8, path, "src/vsr/replica.zig")) continue; // :-)
         if (std.mem.eql(u8, path, "src/docs_website/package-lock.json")) continue; // :-(
+
+        // ファイルのサイズが1/4MiBを超えているかを確認します。
         if (size > @divExact(MiB, 4)) {
             has_large_blobs = true;
             std.debug.print("{s}\n", .{line});
         }
     }
+    // 大きなファイルが存在する場合は、エラーを返します。
     if (has_large_blobs) return error.HasLargeBlobs;
 }
 
 // Sanity check for "unexpected" files in the repository.
 test "tidy extensions" {
+    // このテストは、Gitリポジトリ内の全てのファイルが許可された拡張子を持っているか、または例外リストに含まれているかを確認します。
+    // これにより、不適切なファイル形式がリポジトリに含まれていないことを保証します。
+
+    // 許可された拡張子のリストを定義します。
     const allowed_extensions = std.ComptimeStringMap(void, .{
         .{".bat"}, .{".c"},     .{".cs"},   .{".csproj"},  .{".css"},  .{".go"},
         .{".h"},   .{".hcl"},   .{".java"}, .{".js"},      .{".json"}, .{".md"},
@@ -261,6 +315,7 @@ test "tidy extensions" {
         .{".sum"}, .{".ts"},    .{".txt"},  .{".xml"},     .{".yml"},  .{".zig"},
     });
 
+    // 例外として許可されるファイルのリストを定義します。
     const exceptions = std.ComptimeStringMap(void, .{
         .{".editorconfig"},          .{".gitattributes"},   .{".gitignore"},
         .{".nojekyll"},              .{"CNAME"},            .{"Dockerfile"},
@@ -269,24 +324,33 @@ test "tidy extensions" {
         .{"logo.svg"},               .{"logo-white.svg"},   .{"logo-with-text-white.svg"},
     });
 
+    // Shellインスタンスを作成します。これを使用して、シェルコマンドを実行します。
     const allocator = std.testing.allocator;
     const shell = try Shell.create(allocator);
     defer shell.destroy();
 
+    // Gitリポジトリ内の全てのファイルをリストアップします。
     const files = try shell.exec_stdout("git ls-files", .{});
     var lines = std.mem.split(u8, files, "\n");
+    // 不適切な拡張子が存在するかどうかを示すフラグを初期化します。
     var bad_extension = false;
+    // 各ファイルについて、以下のチェックを行います。
     while (lines.next()) |path| {
         if (path.len == 0) continue;
+        // ファイルの拡張子を取得します。
         const extension = std.fs.path.extension(path);
+        // 拡張子が許可されているかを確認します。
         if (!allowed_extensions.has(extension)) {
+            // ファイル名を取得します。
             const basename = std.fs.path.basename(path);
+            // ファイルが例外リストに含まれていないかを確認します。
             if (!exceptions.has(basename)) {
                 std.debug.print("bad extension: {s}\n", .{path});
                 bad_extension = true;
             }
         }
     }
+    // 不適切な拡張子が存在する場合は、エラーを返します。
     if (bad_extension) return error.BadExtension;
 }
 

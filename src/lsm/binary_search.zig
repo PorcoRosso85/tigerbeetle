@@ -556,19 +556,35 @@ const test_binary_search = struct {
 };
 
 test "binary search: exhaustive" {
+    // このテストは、バイナリサーチの網羅的なテストを行います。
+    // バイナリサーチは、ソートされたデータセット内で特定の要素を効率的に探すためのアルゴリズムです。
+    // このテストでは、異なるサイズのデータセットでバイナリサーチを実行し、その結果を検証します。
+
+    // ログ情報を出力します。この行はテストの新しいセクションを示します。
     if (test_binary_search.log) std.debug.print("\n", .{});
+
+    // バイナリサーチの2つのモード（下限と上限）についてテストを行います。
     inline for (.{ .lower_bound, .upper_bound }) |mode| {
+
+        // データセットのサイズを1から300まで変化させてテストを行います。
         var i: u32 = 1;
         while (i < 300) : (i += 1) {
+
+            // 指定したサイズとモードでバイナリサーチを実行し、その結果を検証します。
             try test_binary_search.exhaustive_search(i, mode);
         }
     }
 }
 
 test "binary search: explicit" {
+    // このテストは、明示的なバイナリサーチ機能を検証します。
+    // それぞれのテストケースは、特定の入力配列と検索値に対して期待される結果を検証します。
+    // モード（lower_boundまたはupper_bound）によって、検索結果がどのように変化するかも検証します。
+
     if (test_binary_search.log) std.debug.print("\n", .{});
 
     inline for (.{ .lower_bound, .upper_bound }) |mode| {
+        // 空の配列に対する検索テスト
         try test_binary_search.explicit_search(
             &[_]u32{},
             &[_]u32{0},
@@ -578,6 +594,7 @@ test "binary search: explicit" {
             mode,
         );
 
+        // 単一要素の配列に対する検索テスト
         try test_binary_search.explicit_search(
             &[_]u32{4} ** 10,
             &[_]u32{4},
@@ -590,6 +607,7 @@ test "binary search: explicit" {
             mode,
         );
 
+        // 空の配列に対する再度の検索テスト
         try test_binary_search.explicit_search(
             &[_]u32{},
             &[_]u32{0},
@@ -599,6 +617,7 @@ test "binary search: explicit" {
             mode,
         );
 
+        // 3要素の配列に対する検索テスト
         try test_binary_search.explicit_search(
             &[_]u32{1},
             &[_]u32{ 0, 1, 2 },
@@ -610,6 +629,7 @@ test "binary search: explicit" {
             mode,
         );
 
+        // 5要素の配列に対する検索テスト
         try test_binary_search.explicit_search(
             &[_]u32{ 1, 3 },
             &[_]u32{ 0, 1, 2, 3, 4 },
@@ -623,6 +643,7 @@ test "binary search: explicit" {
             mode,
         );
 
+        // 14要素の配列に対する検索テスト
         try test_binary_search.explicit_search(
             &[_]u32{ 1, 3, 5, 8, 9, 11 },
             &[_]u32{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 },
@@ -648,7 +669,15 @@ test "binary search: explicit" {
 }
 
 test "binary search: duplicates" {
+    // このテストは、重複した値を含む配列に対するバイナリサーチ機能を検証します。
+    // 重複した値が存在する場合、バイナリサーチの結果がどのようになるかを確認します。
+    // これにより、バイナリサーチが重複した値を正しく扱えることを確認します。
+
+    // ログ出力が有効な場合は、改行を出力します。
     if (test_binary_search.log) std.debug.print("\n", .{});
+
+    // lower_boundモードでの検索テストを行います。
+    // このモードでは、検索値以上の最小のインデックスを返します。
     try test_binary_search.explicit_search(
         &[_]u32{ 0, 0, 3, 3, 3, 5, 5, 5, 5 },
         &[_]u32{ 0, 1, 2, 3, 4, 5, 6 },
@@ -663,6 +692,9 @@ test "binary search: duplicates" {
         },
         .lower_bound,
     );
+
+    // upper_boundモードでの検索テストを行います。
+    // このモードでは、検索値より大きい最小のインデックスを返します。
     try test_binary_search.explicit_search(
         &[_]u32{ 0, 0, 3, 3, 3, 5, 5, 5, 5 },
         &[_]u32{ 0, 1, 2, 3, 4, 5, 6 },
@@ -680,19 +712,35 @@ test "binary search: duplicates" {
 }
 
 test "binary search: random" {
+    // このテストは、ランダムなデータを用いてバイナリサーチ機能を検証します。
+    // ランダムなデータを生成し、それを用いてバイナリサーチが正しく機能するかを確認します。
+    // これにより、様々なシナリオでのバイナリサーチの動作を確認することができます。
+
+    // ランダムな数値を生成するための乱数生成器を初期化します。
     var rng = std.rand.DefaultPrng.init(42);
+
+    // バイナリサーチのモード（lower_bound, upper_bound）ごとにテストを行います。
     inline for (.{ .lower_bound, .upper_bound }) |mode| {
+        // テストを2048回繰り返します。
         var i: usize = 0;
         while (i < 2048) : (i += 1) {
+            // ランダムなデータを生成し、それを用いてバイナリサーチを行います。
             try test_binary_search.random_search(rng.random(), i, mode);
         }
     }
 }
 
 test "binary search: explicit range" {
+    // このテストは、明示的な範囲を指定したバイナリサーチ機能を検証します。
+    // 範囲を指定することで、検索対象となるデータの範囲を制限できます。
+    // これにより、バイナリサーチが指定した範囲内のデータのみを対象に検索できることを確認します。
+
+    // ログ出力が有効な場合は、改行を出力します。
     if (test_binary_search.log) std.debug.print("\n", .{});
 
     // Exact inverval:
+    // 完全に一致する範囲での検索テストを行います。
+    // このテストでは、配列の最小値と最大値を範囲として指定します。
     try test_binary_search.explicit_range_search(
         &[_]u32{ 3, 4, 10, 15, 20, 25, 30, 100, 1000 },
         3,
@@ -704,6 +752,8 @@ test "binary search: explicit range" {
     );
 
     // Larger inverval:
+    // 配列の範囲を超える範囲での検索テストを行います。
+    // このテストでは、配列の最小値より小さい値と最大値より大きい値を範囲として指定します。
     try test_binary_search.explicit_range_search(
         &[_]u32{ 3, 4, 10, 15, 20, 25, 30, 100, 1000 },
         2,
@@ -715,6 +765,8 @@ test "binary search: explicit range" {
     );
 
     // Inclusive key_min and exclusive key_max:
+    // key_minを含み、key_maxを除外する範囲での検索テストを行います。
+    // このテストでは、配列の一部を範囲として指定します。
     try test_binary_search.explicit_range_search(
         &[_]u32{ 3, 4, 10, 15, 20, 25, 30, 100, 1000 },
         3,
@@ -726,6 +778,8 @@ test "binary search: explicit range" {
     );
 
     // Exclusive key_min and inclusive key_max:
+    // key_minを除外し、key_maxを含む範囲での検索テストを行います。
+    // このテストでは、配列の一部を範囲として指定します。
     try test_binary_search.explicit_range_search(
         &[_]u32{ 3, 4, 10, 15, 20, 25, 30, 100, 1000 },
         5,
@@ -737,6 +791,8 @@ test "binary search: explicit range" {
     );
 
     // Exclusive interval:
+    // key_minとkey_maxを除外する範囲での検索テストを行います。
+    // このテストでは、配列の一部を範囲として指定します。
     try test_binary_search.explicit_range_search(
         &[_]u32{ 3, 4, 10, 15, 20, 25, 30, 100, 1000 },
         5,
@@ -748,6 +804,8 @@ test "binary search: explicit range" {
     );
 
     // Inclusive interval:
+    // key_minとkey_maxを含む範囲での検索テストを行います。
+    // このテストでは、配列の一部を範囲として指定します。
     try test_binary_search.explicit_range_search(
         &[_]u32{ 3, 4, 10, 15, 20, 25, 30, 100, 1000 },
         15,
@@ -759,6 +817,8 @@ test "binary search: explicit range" {
     );
 
     // Where key_min == key_max:
+    // key_minとkey_maxが同じ値の範囲での検索テストを行います。
+    // このテストでは、配列の一部を範囲として指定します。
     try test_binary_search.explicit_range_search(
         &[_]u32{ 3, 4, 10, 15, 20, 25, 30, 100, 1000 },
         10,
@@ -770,6 +830,8 @@ test "binary search: explicit range" {
     );
 
     // Interval smaller than the first element:
+    // 配列の最小値より小さい範囲での検索テストを行います。
+    // このテストでは、配列の範囲外を指定します。
     try test_binary_search.explicit_range_search(
         &[_]u32{ 3, 4, 10, 15, 20, 25, 30, 100, 1000 },
         1,
@@ -781,6 +843,8 @@ test "binary search: explicit range" {
     );
 
     // Interval greater than the last element:
+    // 配列の最大値より大きい範囲での検索テストを行います。
+    // このテストでは、配列の範囲外を指定します。
     try test_binary_search.explicit_range_search(
         &[_]u32{ 3, 4, 10, 15, 20, 25, 30, 100, 1000 },
         1_001,
@@ -792,6 +856,8 @@ test "binary search: explicit range" {
     );
 
     // Nonexistent interval in the middle:
+    // 配列の中間に存在しない範囲での検索テストを行います。
+    // このテストでは、配列の範囲内でも存在しない値を範囲として指定します。
     try test_binary_search.explicit_range_search(
         &[_]u32{ 3, 4, 10, 15, 20, 25, 30, 100, 1000 },
         31,
@@ -803,6 +869,8 @@ test "binary search: explicit range" {
     );
 
     // Empty slice:
+    // 空の配列での検索テストを行います。
+    // このテストでは、配列が空の場合に検索が正しく行えるかを確認します。
     try test_binary_search.explicit_range_search(
         &[_]u32{},
         1,
@@ -815,7 +883,14 @@ test "binary search: explicit range" {
 }
 
 test "binary search: duplicated range" {
+    // このテストは、重複した範囲を持つデータに対するバイナリサーチ機能を検証します。
+    // データ内に同じ値が複数存在する場合でも、バイナリサーチが正しく機能することを確認します。
+
+    // ログ出力が有効な場合は、改行を出力します。
     if (test_binary_search.log) std.debug.print("\n", .{});
+
+    // 重複した値が存在する範囲での検索テストを行います。
+    // このテストでは、配列内に3と5が複数存在する範囲を指定します。
     try test_binary_search.explicit_range_search(
         &[_]u32{ 1, 3, 3, 3, 5, 5, 5, 7 },
         3,
@@ -825,6 +900,9 @@ test "binary search: duplicated range" {
             .count = 6,
         },
     );
+
+    // 重複した値が存在する範囲での検索テストを行います。
+    // このテストでは、配列内に1が複数存在する範囲を指定します。
     try test_binary_search.explicit_range_search(
         &[_]u32{ 1, 1, 1, 3, 5, 7 },
         1,
@@ -837,9 +915,19 @@ test "binary search: duplicated range" {
 }
 
 test "binary search: random range" {
+    // このテストは、ランダムな範囲を持つデータに対するバイナリサーチ機能を検証します。
+    // ランダムなデータでも、バイナリサーチが正しく機能することを確認します。
+
+    // ランダムな値を生成するための乱数生成器を初期化します。
+    // ここでは、乱数のシード値として42を使用しています。
     var rng = std.rand.DefaultPrng.init(42);
+
+    // 2048回の検索テストを行います。
+    // 各テストでは、ランダムな値とインデックスを使用して検索を行います。
     var i: usize = 0;
     while (i < 2048) : (i += 1) {
+        // ランダムな値とインデックスを使用して検索テストを行います。
+        // このテストでは、乱数生成器から生成したランダムな値と、現在のインデックスを使用します。
         try test_binary_search.random_range_search(rng.random(), i);
     }
 }

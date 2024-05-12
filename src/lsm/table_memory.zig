@@ -187,32 +187,55 @@ const TestTable = struct {
 };
 
 test "table_memory: unit" {
+    // このテストは、TableMemoryの基本的な動作を確認します。
+    // TableMemoryは、キーと値のペアを保持するためのメモリテーブルです。
+
+    // テスト用のユーティリティとテスト対象のTableMemoryをインポートします。
     const testing = std.testing;
     const TableMemory = TableMemoryType(TestTable);
 
+    // メモリアロケータを取得します。
     const allocator = testing.allocator;
+
+    // メモリテーブルを初期化します。モードはmutable（変更可能）です。
     var table_memory = try TableMemory.init(allocator, .mutable, "test");
+
+    // テスト終了後にメモリテーブルを解放します。
     defer table_memory.deinit(allocator);
 
+    // メモリテーブルに3つのエントリを追加します。
     table_memory.put(&.{ .key = 1, .value = 1, .tombstone = false });
     table_memory.put(&.{ .key = 3, .value = 3, .tombstone = false });
     table_memory.put(&.{ .key = 5, .value = 5, .tombstone = false });
 
+    // メモリテーブルのエントリ数と、値のコンテキストが正しいことを確認します。
     assert(table_memory.count() == 3 and table_memory.value_context.count == 3);
+
+    // 値のコンテキストがソートされていることを確認します。
     assert(table_memory.value_context.sorted);
 
+    // 新たにエントリを追加し、メモリテーブルをimmutable（変更不可能）にします。
     table_memory.put(&.{ .key = 0, .value = 0, .tombstone = false });
     table_memory.make_immutable(0);
 
+    // 再度、メモリテーブルのエントリ数と、値のコンテキストが正しいことを確認します。
     assert(table_memory.count() == 4 and table_memory.value_context.count == 4);
+
+    // 最小キー、最大キーが正しいことを確認します。
     assert(table_memory.key_min() == 0);
     assert(table_memory.key_max() == 5);
+
+    // 値のコンテキストがソートされていることを確認します。
     assert(table_memory.value_context.sorted);
 
     // "Flush" and make mutable again
+    // "Flush"操作を行い、再度mutableにします。
     table_memory.mutability.immutable.flushed = true;
 
     table_memory.make_mutable();
+
+    // メモリテーブルが空になっていること、値のコンテキストがソートされていること、
+    // メモリテーブルがmutableであることを確認します。
     assert(table_memory.count() == 0 and table_memory.value_context.count == 0);
     assert(table_memory.value_context.sorted);
     assert(table_memory.mutability == .mutable);

@@ -119,6 +119,14 @@ fn composite_key_test(comptime CompositeKey: type) !void {
 }
 
 test "composite_key" {
+    // このテストは、複合キーの動作を検証します。
+    // 複合キーがu64とu128の両方の型で正しく動作することを確認します。
+
+    // u64型の複合キーのテストを実行します。
+    // ここでは、複合キーの型としてu64を指定しています。
     try composite_key_test(CompositeKeyType(u64));
+
+    // u128型の複合キーのテストを実行します。
+    // ここでは、複合キーの型としてu128を指定しています。
     try composite_key_test(CompositeKeyType(u128));
 }

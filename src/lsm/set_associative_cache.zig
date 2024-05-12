@@ -551,39 +551,60 @@ fn set_associative_cache_test(
 }
 
 test "SetAssociativeCache: eviction" {
+    // SetAssociativeCacheは、キャッシュの一種で、特定のキーに対応する値を高速に取得するためのものです。
+    // このテストでは、キャッシュが一杯になったときに、適切に古いデータが削除されるかを確認します。
+    //
+    // キーと値の型を設定します。このテストでは、両方ともu64型を使用します。
     const Key = u64;
     const Value = u64;
 
+    // キャッシュの動作を定義するためのコンテキストを作成します。
+    // ここでは、値からキーを取得する方法と、キーをハッシュ化する方法を定義しています。
     const context = struct {
+        // 値からキーを取得する関数
         inline fn key_from_value(value: *const Value) Key {
             return value.*;
         }
+        // キーをハッシュ化する関数
         inline fn hash(key: Key) u64 {
             return key;
         }
     };
 
+    // set_associative_cache_test関数を呼び出して、キャッシュのテストを実行します。
+    // この関数は、キーと値の型、コンテキスト、およびテストオプションを引数に取ります。
     try set_associative_cache_test(Key, Value, context, .{}).run();
 }
 
 test "SetAssociativeCache: hash collision" {
+    // SetAssociativeCacheは、キャッシュの一種で、特定のキーに対応する値を高速に取得するためのものです。
+    // このテストでは、意図的にハッシュ関数を壊すことでハッシュ衝突を引き起こし、キャッシュが適切に動作するかを確認します。
+    //
+    // キーと値の型を設定します。このテストでは、両方ともu64型を使用します。
     const Key = u64;
     const Value = u64;
 
+    // キャッシュの動作を定義するためのコンテキストを作成します。
+    // ここでは、値からキーを取得する方法、キーをハッシュ化する方法（ここでは意図的に壊れたハッシュ関数を使用）、
+    // およびキーの等価性を判断する方法を定義しています。
     const context = struct {
+        // 値からキーを取得する関数
         inline fn key_from_value(value: *const Value) Key {
             return value.*;
         }
-        /// This hash function is intentionally broken to simulate hash collision.
+        // キーをハッシュ化する関数（ここでは意図的に壊れたハッシュ関数を使用）
         inline fn hash(key: Key) u64 {
             _ = key;
             return 0;
         }
+        // キーの等価性を判断する関数
         inline fn equal(a: Key, b: Key) bool {
             return a == b;
         }
     };
 
+    // set_associative_cache_test関数を呼び出して、キャッシュのテストを実行します。
+    // この関数は、キーと値の型、コンテキスト、およびテストオプションを引数に取ります。
     try set_associative_cache_test(Key, Value, context, .{}).run();
 }
 
@@ -649,19 +670,26 @@ fn PackedUnsignedIntegerArray(comptime UInt: type) type {
 }
 
 test "PackedUnsignedIntegerArray: unit" {
+    // このテストは、PackedUnsignedIntegerArrayの基本的な動作を検証します。
+    // PackedUnsignedIntegerArrayは、固定長の符号なし整数を効率的に格納するためのデータ構造です。
+    // このテストでは、値の設定と取得が正しく行われることを確認します。
     const expectEqual = std.testing.expectEqual;
 
+    // 初期化された配列を作成します。
     var words = [8]u64{ 0, 0b10110010, 0, 0, 0, 0, 0, 0 };
 
+    // PackedUnsignedIntegerArrayを作成し、初期化された配列を指定します。
     var p: PackedUnsignedIntegerArray(u2) = .{
         .words = &words,
     };
 
+    // 配列の特定の位置から値を取得し、期待値と一致することを確認します。
     try expectEqual(@as(u2, 0b10), p.get(32 + 0));
     try expectEqual(@as(u2, 0b00), p.get(32 + 1));
     try expectEqual(@as(u2, 0b11), p.get(32 + 2));
     try expectEqual(@as(u2, 0b10), p.get(32 + 3));
 
+    // 配列の特定の位置に値を設定し、設定した値が正しく反映されていることを確認します。
     p.set(0, 0b01);
     try expectEqual(@as(u64, 0b00000001), words[0]);
     try expectEqual(@as(u2, 0b01), p.get(0));
@@ -681,6 +709,8 @@ test "PackedUnsignedIntegerArray: unit" {
     try expectEqual(@as(u64, 0b00111001), words[0]);
     try expectEqual(@as(u2, 0b00), p.get(3));
 
+    // 配列の特定の位置に値を設定し、設定した値が正しく反映されていることを確認します。
+    // ここでは、配列の4番目と31番目の位置に値を設定しています。
     p.set(4, 0b11);
     try expectEqual(
         @as(u64, 0b0000000000000000000000000000000000000000000000000000001100111001),
@@ -749,17 +779,31 @@ fn PackedUnsignedIntegerArrayFuzzTest(comptime UInt: type) type {
 }
 
 test "PackedUnsignedIntegerArray: fuzz" {
+    // このテストは、PackedUnsignedIntegerArrayのFuzzテストを行います。
+    // Fuzzテストは、ランダムな入力を使用してプログラムをテストし、未予測のエラーやバグを見つけるためのものです。
+
+    // 乱数生成のためのシード値を設定します。
     const seed = 42;
 
+    // シード値を元に乱数生成器を初期化します。
     var prng = std.rand.DefaultPrng.init(seed);
+
+    // 乱数を生成します。
     const random = prng.random();
 
+    // ここでは、u1、u2、u4の各型についてテストを行います。
     inline for (.{ u1, u2, u4 }) |UInt| {
+
+        // テストコンテキストを作成します。
         const Context = PackedUnsignedIntegerArrayFuzzTest(UInt);
 
+        // テストコンテキストを初期化します。
         var context = try Context.init(random, 1024);
+
+        // テスト終了後にコンテキストを解放します。
         defer context.deinit();
 
+        // テストを実行します。
         try context.run();
     }
 }
@@ -785,13 +829,22 @@ fn BitIterator(comptime Bits: type) type {
 }
 
 test "BitIterator" {
+    // このテストは、BitIteratorが正しく機能するかを確認します。
+    // BitIteratorは、ビット列を一つずつ取り出すためのイテレータです。
+
+    // テスト用の比較関数をインポートします。
     const expectEqual = @import("std").testing.expectEqual;
 
+    // テスト対象のBitIteratorを初期化します。ビット列は0b1000_0000_0100_0101です。
     var it = BitIterator(u16){ .bits = 0b1000_0000_0100_0101 };
 
+    // BitIteratorから順にビットを取り出し、期待する値と一致することを確認します。
+    // 期待する値は0, 2, 6, 15です。
     for ([_]u4{ 0, 2, 6, 15 }) |e| {
         try expectEqual(@as(?u4, e), it.next());
     }
+
+    // 全てのビットを取り出した後、BitIteratorからはnullが返ることを確認します。
     try expectEqual(it.next(), null);
 }
 
@@ -869,21 +922,33 @@ fn search_tags_test(comptime Key: type, comptime Value: type, comptime layout: L
 }
 
 test "SetAssociativeCache: search_tags()" {
+    // このテストは、SetAssociativeCacheのsearch_tagsメソッドが正しく動作することを確認します。
+    // search_tagsメソッドは、キャッシュから特定のタグを持つエントリを検索するためのものです。
+
+    // 乱数生成のためのシード値を設定します。
     const seed = 42;
 
+    // キーと値の型を設定します。
     const Key = u64;
     const Value = u64;
 
+    // シード値を元に乱数生成器を初期化します。
     var prng = std.rand.DefaultPrng.init(seed);
+
+    // 乱数を生成します。
     const random = prng.random();
 
+    // ここでは、waysが2, 4, 16、tag_bitsが8, 16の各組み合わせについてテストを行います。
     inline for ([_]u64{ 2, 4, 16 }) |ways| {
         inline for ([_]u64{ 8, 16 }) |tag_bits| {
+
+            // テストケースを作成します。
             const case = search_tags_test(Key, Value, .{
                 .ways = ways,
                 .tag_bits = tag_bits,
             });
 
+            // テストケースを実行します。
             try case.run(random);
         }
     }

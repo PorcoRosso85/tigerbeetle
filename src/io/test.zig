@@ -8,6 +8,9 @@ const Time = @import("../time.zig").Time;
 const IO = @import("../io.zig").IO;
 
 test "write/read/close" {
+    // このテストは、ファイルへの書き込み、読み込み、閉じる操作が正しく機能することを確認します。
+    // 各操作は非同期I/Oを使用して行われ、各操作が完了したときにはコールバック関数が呼び出されます。
+
     try struct {
         const Context = @This();
 
@@ -15,6 +18,7 @@ test "write/read/close" {
         done: bool = false,
         fd: os.fd_t,
 
+        // 書き込みと読み込みのためのバッファを準備します。
         write_buf: [20]u8 = [_]u8{97} ** 20,
         read_buf: [20]u8 = [_]u8{98} ** 20,
 
@@ -22,6 +26,7 @@ test "write/read/close" {
         read: usize = 0,
 
         fn run_test() !void {
+            // テスト用のファイルを作成します。
             const path = "test_io_write_read_close";
             const file = try std.fs.cwd().createFile(path, .{ .read = true, .truncate = true });
             defer std.fs.cwd().deleteFile(path) catch {};
@@ -34,6 +39,7 @@ test "write/read/close" {
 
             var completion: IO.Completion = undefined;
 
+            // ファイルへの書き込みを開始します。
             self.io.write(
                 *Context,
                 &self,
@@ -43,31 +49,41 @@ test "write/read/close" {
                 &self.write_buf,
                 10,
             );
+            // 全ての操作が完了するまで待機します。
             while (!self.done) try self.io.tick();
 
+            // 書き込みと読み込みの結果を確認します。
             try testing.expectEqual(self.write_buf.len, self.written);
             try testing.expectEqual(self.read_buf.len, self.read);
             try testing.expectEqualSlices(u8, &self.write_buf, &self.read_buf);
         }
 
+        // 書き込みが完了したときに呼び出されるコールバック関数です。
+        // ここで非同期I/O操作を使用していることがわかります。
         fn write_callback(
             self: *Context,
             completion: *IO.Completion,
             result: IO.WriteError!usize,
         ) void {
             self.written = result catch @panic("write error");
+            // ファイルからの読み込みを開始します。
             self.io.read(*Context, self, read_callback, completion, self.fd, &self.read_buf, 10);
         }
 
+        // 読み込みが完了したときに呼び出されるコールバック関数です。
+        // ここで非同期I/O操作を使用していることがわかります。
         fn read_callback(
             self: *Context,
             completion: *IO.Completion,
             result: IO.ReadError!usize,
         ) void {
             self.read = result catch @panic("read error");
+            // ファイルを閉じます。
             self.io.close(*Context, self, close_callback, completion, self.fd);
         }
 
+        // ファイルが閉じられたときに呼び出されるコールバック関数です。
+        // ここで非同期I/O操作を使用していることがわかります。
         fn close_callback(
             self: *Context,
             completion: *IO.Completion,
@@ -76,12 +92,17 @@ test "write/read/close" {
             _ = completion;
             _ = result catch @panic("close error");
 
+            // 全ての操作が完了したことを示します。
             self.done = true;
         }
     }.run_test();
 }
 
 test "accept/connect/send/receive" {
+    // このテストは、ソケットの接続、送信、受信が正しく機能することを確認します。
+    // 各操作は非同期I/Oを使用して行われ、各操作が完了したときにはコールバック関数が呼び出されます。
+    // ソケットとは、通信のためのエンドポイントを表す抽象化のことで、通信のためのインターフェースを提供します。
+
     try struct {
         const Context = @This();
 
@@ -92,6 +113,8 @@ test "accept/connect/send/receive" {
 
         accepted_sock: os.socket_t = undefined,
 
+        // 送信と受信のためのバッファを準備します。
+        // バッファとは、データを一時的に格納するためのメモリ領域のことです。
         send_buf: [10]u8 = [_]u8{ 1, 0, 1, 0, 1, 0, 1, 0, 1, 0 },
         recv_buf: [5]u8 = [_]u8{ 0, 1, 0, 1, 0 },
 
@@ -99,26 +122,35 @@ test "accept/connect/send/receive" {
         received: usize = 0,
 
         fn run_test() !void {
+            // IOインスタンスを初期化します。
             var io = try IO.init(32, 0);
             defer io.deinit();
 
+            // テスト用のアドレスを設定します。
             const address = try std.net.Address.parseIp4("127.0.0.1", 0);
             const kernel_backlog = 1;
+            // サーバーソケットを開きます。
             const server = try io.open_socket(address.any.family, os.SOCK.STREAM, os.IPPROTO.TCP);
             defer os.closeSocket(server);
 
+            // クライアントソケットを開きます。
             const client = try io.open_socket(address.any.family, os.SOCK.STREAM, os.IPPROTO.TCP);
             defer os.closeSocket(client);
 
+            // ソケットオプションを設定します。
             try os.setsockopt(
                 server,
                 os.SOL.SOCKET,
                 os.SO.REUSEADDR,
                 &std.mem.toBytes(@as(c_int, 1)),
             );
+            // サーバーソケットをバインドします。
+            // バインドとは、ソケットにアドレスを割り当てることです。
             try os.bind(server, &address.any, address.getOsSockLen());
+            // サーバーソケットをリッスン状態にします。
             try os.listen(server, kernel_backlog);
 
+            // クライアントアドレスを取得します。
             var client_address = std.net.Address.initIp4(undefined, undefined);
             var client_address_len = client_address.getOsSockLen();
             try os.getsockname(server, &client_address.any, &client_address_len);
@@ -130,6 +162,7 @@ test "accept/connect/send/receive" {
             };
 
             var client_completion: IO.Completion = undefined;
+            // クライアントソケットを接続します。
             self.io.connect(
                 *Context,
                 &self,
@@ -140,16 +173,20 @@ test "accept/connect/send/receive" {
             );
 
             var server_completion: IO.Completion = undefined;
+            // サーバーソケットで接続を受け入れます。
             self.io.accept(*Context, &self, accept_callback, &server_completion, server);
 
+            // 全ての操作が完了するまで待機します。
             while (!self.done) try self.io.tick();
 
+            // 送信と受信の結果を確認します。
             try testing.expectEqual(self.send_buf.len, self.sent);
             try testing.expectEqual(self.recv_buf.len, self.received);
 
             try testing.expectEqualSlices(u8, self.send_buf[0..self.received], &self.recv_buf);
         }
 
+        // 接続が完了したときに呼び出されるコールバック関数です。
         fn connect_callback(
             self: *Context,
             completion: *IO.Completion,
@@ -157,6 +194,7 @@ test "accept/connect/send/receive" {
         ) void {
             _ = result catch @panic("connect error");
 
+            // データの送信を開始します。
             self.io.send(
                 *Context,
                 self,
@@ -167,6 +205,7 @@ test "accept/connect/send/receive" {
             );
         }
 
+        // 送信が完了したときに呼び出されるコールバック関数です。
         fn send_callback(
             self: *Context,
             completion: *IO.Completion,
@@ -177,12 +216,14 @@ test "accept/connect/send/receive" {
             self.sent = result catch @panic("send error");
         }
 
+        // 接続が受け入れられたときに呼び出されるコールバック関数です。
         fn accept_callback(
             self: *Context,
             completion: *IO.Completion,
             result: IO.AcceptError!os.socket_t,
         ) void {
             self.accepted_sock = result catch @panic("accept error");
+            // データの受信を開始します。
             self.io.recv(
                 *Context,
                 self,
@@ -193,6 +234,7 @@ test "accept/connect/send/receive" {
             );
         }
 
+        // 受信が完了したときに呼び出されるコールバック関数です。
         fn recv_callback(
             self: *Context,
             completion: *IO.Completion,
@@ -201,12 +243,16 @@ test "accept/connect/send/receive" {
             _ = completion;
 
             self.received = result catch @panic("recv error");
+            // 全ての操作が完了したことを示します。
             self.done = true;
         }
     }.run_test();
 }
 
 test "timeout" {
+    // このテストは、IO.timeout関数が指定した時間後に正しくコールバックを呼び出すことを確認します。
+    // また、全てのタイムアウトが期待通りの時間内に完了することも確認します。
+
     const ms = 20;
     const margin = 5;
     const count = 10;
@@ -220,16 +266,20 @@ test "timeout" {
         stop_time: u64 = 0,
 
         fn run_test() !void {
+            // タイマーを初期化します。
             var timer = Time{};
+            // 開始時間を記録します。
             const start_time = timer.monotonic();
             var self: Context = .{
                 .timer = &timer,
+                // IOインスタンスを初期化します。
                 .io = try IO.init(32, 0),
             };
             defer self.io.deinit();
 
             var completions: [count]IO.Completion = undefined;
             for (&completions) |*completion| {
+                // タイムアウトを設定します。指定した時間が経過すると、コールバック関数が呼び出されます。
                 self.io.timeout(
                     *Context,
                     &self,
@@ -238,11 +288,14 @@ test "timeout" {
                     ms * std.time.ns_per_ms,
                 );
             }
+            // 全てのタイムアウトが完了するまで待機します。
             while (self.count < count) try self.io.tick();
 
             try self.io.tick();
+            // タイムアウトが期待通りの回数呼び出されたことを確認します。
             try testing.expectEqual(@as(u32, count), self.count);
 
+            // 全てのタイムアウトが期待通りの時間内に完了したことを確認します。
             try testing.expectApproxEqAbs(
                 @as(f64, ms),
                 @as(f64, @floatFromInt((self.stop_time - start_time) / std.time.ns_per_ms)),
@@ -258,13 +311,18 @@ test "timeout" {
             _ = completion;
             _ = result catch @panic("timeout error");
 
+            // タイムアウトが完了した時間を記録します。
             if (self.stop_time == 0) self.stop_time = self.timer.monotonic();
+            // タイムアウトが完了した回数をカウントします。
             self.count += 1;
         }
     }.run_test();
 }
 
 test "submission queue full" {
+    // このテストは、提出キューが満杯の場合のIO.timeout関数の動作を確認します。
+    // 提出キューが満杯の場合でも、全てのタイムアウトが期待通りに完了することを確認します。
+
     const ms = 20;
     const count = 10;
 
@@ -275,11 +333,13 @@ test "submission queue full" {
         count: u32 = 0,
 
         fn run_test() !void {
+            // IOインスタンスを初期化します。提出キューのサイズは1に設定します。
             var self: Context = .{ .io = try IO.init(1, 0) };
             defer self.io.deinit();
 
             var completions: [count]IO.Completion = undefined;
             for (&completions) |*completion| {
+                // タイムアウトを設定します。提出キューが満杯の場合でも、タイムアウトは正しく設定されます。
                 self.io.timeout(
                     *Context,
                     &self,
@@ -288,9 +348,11 @@ test "submission queue full" {
                     ms * std.time.ns_per_ms,
                 );
             }
+            // 全てのタイムアウトが完了するまで待機します。
             while (self.count < count) try self.io.tick();
 
             try self.io.tick();
+            // タイムアウトが期待通りの回数呼び出されたことを確認します。
             try testing.expectEqual(@as(u32, count), self.count);
         }
 
@@ -302,6 +364,7 @@ test "submission queue full" {
             _ = completion;
             _ = result catch @panic("timeout error");
 
+            // タイムアウトが完了した回数をカウントします。
             self.count += 1;
         }
     }.run_test();
@@ -309,6 +372,8 @@ test "submission queue full" {
 
 test "tick to wait" {
     // Use only IO.tick() to see if pending IO is actually processed
+    // このテストは、IO.tick()関数が実際に保留中のIOを処理するかどうかを確認します。
+    // IO.tick()関数が正しく動作していれば、保留中のIO操作が完了し、結果が返されます。
 
     try struct {
         const Context = @This();
@@ -319,9 +384,11 @@ test "tick to wait" {
         received: bool = false,
 
         fn run_test() !void {
+            // IOインスタンスを初期化します。
             var self: Context = .{ .io = try IO.init(1, 0) };
             defer self.io.deinit();
 
+            // テスト用のサーバーソケットを開きます。
             const address = try std.net.Address.parseIp4("127.0.0.1", 0);
             const kernel_backlog = 1;
 
@@ -329,6 +396,7 @@ test "tick to wait" {
                 try self.io.open_socket(address.any.family, os.SOCK.STREAM, os.IPPROTO.TCP);
             defer os.closeSocket(server);
 
+            // サーバーソケットのオプションを設定し、アドレスにバインドします。
             try os.setsockopt(
                 server,
                 os.SOL.SOCKET,
@@ -338,6 +406,7 @@ test "tick to wait" {
             try os.bind(server, &address.any, address.getOsSockLen());
             try os.listen(server, kernel_backlog);
 
+            // クライアントソケットを開きます。
             var client_address = std.net.Address.initIp4(undefined, undefined);
             var client_address_len = client_address.getOsSockLen();
             try os.getsockname(server, &client_address.any, &client_address_len);
@@ -347,10 +416,12 @@ test "tick to wait" {
             defer os.closeSocket(client);
 
             // Start the accept
+            // サーバーソケットで接続を受け入れる操作を開始します。
             var server_completion: IO.Completion = undefined;
             self.io.accept(*Context, &self, accept_callback, &server_completion, server);
 
             // Start the connect
+            // クライアントソケットで接続操作を開始します。
             var client_completion: IO.Completion = undefined;
             self.io.connect(
                 *Context,
@@ -362,6 +433,7 @@ test "tick to wait" {
             );
 
             // Tick the IO to drain the accept & connect completions
+            // IO.tick()を使用して、接続と受け入れの操作を完了させます。
             assert(!self.connected);
             assert(self.accepted == IO.INVALID_SOCKET);
 
@@ -373,6 +445,7 @@ test "tick to wait" {
             defer os.closeSocket(self.accepted);
 
             // Start receiving on the client
+            // クライアントソケットで受信操作を開始します。
             var recv_completion: IO.Completion = undefined;
             var recv_buffer: [64]u8 = undefined;
             @memset(&recv_buffer, 0xaa);
@@ -386,6 +459,7 @@ test "tick to wait" {
             );
 
             // Drain out the recv completion from any internal IO queues
+            // 内部のIOキューから受信操作を排出します。
             try self.io.tick();
             try self.io.tick();
             try self.io.tick();
@@ -393,18 +467,23 @@ test "tick to wait" {
             // Complete the recv() *outside* of the IO instance.
             // Other tests already check .tick() with IO based completions.
             // This simulates IO being completed by an external system
+            // IOインスタンスの外部でrecv()を完了させます。
+            // これは外部システムによってIOが完了することをシミュレートします。
             var send_buf = std.mem.zeroes([64]u8);
             const wrote = try os_send(self.accepted, &send_buf, 0);
             try testing.expectEqual(wrote, send_buf.len);
 
             // Wait for the recv() to complete using only IO.tick().
             // If tick is broken, then this will deadlock
+            // IO.tick()を使用してrecv()が完了するのを待ちます。
+            // tickが壊れている場合、この部分でデッドロックします。
             assert(!self.received);
             while (!self.received) {
                 try self.io.tick();
             }
 
             // Make sure the receive actually happened
+            // 受信が実際に行われたことを確認します。
             assert(self.received);
             try testing.expect(std.mem.eql(u8, &recv_buffer, &send_buf));
         }
@@ -416,6 +495,7 @@ test "tick to wait" {
         ) void {
             _ = completion;
 
+            // 接続が受け入れられたことを確認します。
             assert(self.accepted == IO.INVALID_SOCKET);
             self.accepted = result catch @panic("accept error");
         }
@@ -428,6 +508,7 @@ test "tick to wait" {
             _ = completion;
             _ = result catch @panic("connect error");
 
+            // 接続が完了したことを確認します。
             assert(!self.connected);
             self.connected = true;
         }
@@ -440,6 +521,7 @@ test "tick to wait" {
             _ = completion;
             _ = result catch |err| std.debug.panic("recv error: {}", .{err});
 
+            // 受信が完了したことを確認します。
             assert(!self.received);
             self.received = true;
         }
@@ -488,6 +570,10 @@ test "tick to wait" {
 }
 
 test "pipe data over socket" {
+    // このテストは、ソケットを介してデータをパイプする機能を検証します。
+    // それは、送信側と受信側の両方でソケットを開き、データを送受信します。
+    // 送信側と受信側のバッファが一致することを確認することで、データの整合性を検証します。
+
     try struct {
         io: IO,
         tx: Pipe,
@@ -507,14 +593,19 @@ test "pipe data over socket" {
             transferred: usize = 0,
         };
 
+        // run関数は、テストの主要なステップを実行します。
         fn run() !void {
+            // 送信と受信のためのバッファを確保します。
             const tx_buf = try testing.allocator.alloc(u8, buffer_size);
             defer testing.allocator.free(tx_buf);
             const rx_buf = try testing.allocator.alloc(u8, buffer_size);
             defer testing.allocator.free(rx_buf);
 
+            // バッファを初期化します。
             @memset(tx_buf, 1);
             @memset(rx_buf, 0);
+
+            // コンテキストを初期化します。
             var self = Context{
                 .io = try IO.init(32, 0),
                 .tx = .{ .buffer = tx_buf },
@@ -522,9 +613,11 @@ test "pipe data over socket" {
             };
             defer self.io.deinit();
 
+            // サーバーソケットを開きます。
             self.server.fd = try self.io.open_socket(os.AF.INET, os.SOCK.STREAM, os.IPPROTO.TCP);
             defer os.closeSocket(self.server.fd);
 
+            // サーバーソケットにアドレスをバインドします。
             const address = try std.net.Address.parseIp4("127.0.0.1", 0);
             try os.setsockopt(
                 self.server.fd,
@@ -536,10 +629,12 @@ test "pipe data over socket" {
             try os.bind(self.server.fd, &address.any, address.getOsSockLen());
             try os.listen(self.server.fd, 1);
 
+            // クライアントアドレスを取得します。
             var client_address = std.net.Address.initIp4(undefined, undefined);
             var client_address_len = client_address.getOsSockLen();
             try os.getsockname(self.server.fd, &client_address.any, &client_address_len);
 
+            // サーバーソケットで接続を受け入れます。
             self.io.accept(
                 *Context,
                 &self,
@@ -548,9 +643,11 @@ test "pipe data over socket" {
                 self.server.fd,
             );
 
+            // クライアントソケットを開きます。
             self.tx.socket.fd = try self.io.open_socket(os.AF.INET, os.SOCK.STREAM, os.IPPROTO.TCP);
             defer os.closeSocket(self.tx.socket.fd);
 
+            // クライアントソケットで接続します。
             self.io.connect(
                 *Context,
                 &self,
@@ -560,6 +657,7 @@ test "pipe data over socket" {
                 client_address,
             );
 
+            // データを送受信します。
             var tick: usize = 0xdeadbeef;
             while (self.rx.transferred != self.rx.buffer.len) : (tick +%= 1) {
                 if (tick % 61 == 0) {
@@ -570,16 +668,22 @@ test "pipe data over socket" {
                 }
             }
 
+            // ソケットが正しく開かれていることを確認します。
             try testing.expect(self.server.fd != IO.INVALID_SOCKET);
             try testing.expect(self.tx.socket.fd != IO.INVALID_SOCKET);
             try testing.expect(self.rx.socket.fd != IO.INVALID_SOCKET);
             os.closeSocket(self.rx.socket.fd);
 
+            // 送受信したデータのサイズが一致することを確認します。
             try testing.expectEqual(self.tx.transferred, buffer_size);
             try testing.expectEqual(self.rx.transferred, buffer_size);
+
+            // 送受信したデータが一致することを確認します。
             try testing.expect(std.mem.eql(u8, self.tx.buffer, self.rx.buffer));
         }
 
+        // on_accept関数は、接続が受け入れられたときに呼び出されます。
+        // この関数は、受信側のソケットを設定し、データの受信を開始します。
         fn on_accept(
             self: *Context,
             completion: *IO.Completion,
@@ -593,6 +697,8 @@ test "pipe data over socket" {
             self.do_receiver(0);
         }
 
+        // on_connect関数は、接続が確立したときに呼び出されます。
+        // この関数は、送信側のデータを送信します。
         fn on_connect(
             self: *Context,
             completion: *IO.Completion,
@@ -607,6 +713,7 @@ test "pipe data over socket" {
             self.do_sender(0);
         }
 
+        // do_sender関数は、データを送信します。
         fn do_sender(self: *Context, bytes: usize) void {
             self.tx.transferred += bytes;
             assert(self.tx.transferred <= self.tx.buffer.len);
@@ -623,6 +730,7 @@ test "pipe data over socket" {
             }
         }
 
+        // on_send関数は、データが送信されたときに呼び出されます。
         fn on_send(
             self: *Context,
             completion: *IO.Completion,
@@ -633,6 +741,7 @@ test "pipe data over socket" {
             self.do_sender(bytes);
         }
 
+        // do_receiver関数は、データを受信します。
         fn do_receiver(self: *Context, bytes: usize) void {
             self.rx.transferred += bytes;
             assert(self.rx.transferred <= self.rx.buffer.len);
@@ -649,6 +758,7 @@ test "pipe data over socket" {
             }
         }
 
+        // on_recv関数は、データが受信されたときに呼び出されます。
         fn on_recv(
             self: *Context,
             completion: *IO.Completion,

@@ -609,6 +609,7 @@ pub usingnamespace if (@import("root") != @This()) struct {
     }
 };
 
+// TODO test_comment
 test "flags" {
     const Snap = @import("./testing/snaptest.zig").Snap;
     const snap = Snap.snap;

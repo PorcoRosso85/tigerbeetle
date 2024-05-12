@@ -25,23 +25,34 @@ const values_per_page = .{ 128, 256, 512, 1024, 2 * 1024, 4 * 1024, 8 * 1024 };
 const body_fmt = "K={:_>2}B V={:_>3}B N={:_>4} {s}{s}: WT={:_>6}ns UT={:_>6}ns";
 
 test "benchmark: binary search" {
+    // このテストは、バイナリサーチのベンチマークを行います。
+    // バイナリサーチは、ソートされたデータセット内で特定の要素を効率的に探すためのアルゴリズムです。
+    // このテストでは、異なるパラメータでバイナリサーチを実行し、そのパフォーマンスを評価します。
+
+    // ログ情報を出力します。サンプル数、壁時計時間、ユーザ時間を表示します。
     log.info("Samples: {}", .{searches});
     log.info("WT: Wall time/search", .{});
     log.info("UT: utime time/search", .{});
 
+    // 乱数生成器のシードを設定します。
     var seed: u64 = undefined;
     try std.os.getrandom(std.mem.asBytes(&seed));
     var prng = std.rand.DefaultPrng.init(seed);
 
     // Allocate on the heap just once.
     // All page allocations reuse this buffer to speed up the run time.
+    // ヒープ上に一度だけメモリを確保します。
+    // すべてのページ割り当てはこのバッファを再利用し、実行時間を速くします。
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
 
+    // バイナリサーチに使用するデータのバッファを確保します。
     var blob = try arena.allocator().alloc(u8, blob_size);
 
+    // 異なるキーと値のサイズ、ページあたりの値の数でベンチマークを実行します。
     inline for (kv_types) |kv| {
         inline for (values_per_page) |values_count| {
+            // ベンチマークを実行します。
             try run_benchmark(.{
                 .blob_size = blob_size,
                 .key_size = kv.key_size,

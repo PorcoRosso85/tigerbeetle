@@ -215,8 +215,13 @@ fn TestContext(comptime node_size: usize, comptime node_alignment: u12) type {
 }
 
 test "NodePool" {
+    // このテストは、異なるノードサイズとノードアライメントを持つノードプールの動作を検証します。
+    // ここでは、異なるノードサイズとノードアライメントを持つノードプールの初期化と実行をテストします。
+    // ノードプールとクラスタの違いは、ノードプールがメモリの一部を占有しそれをノードとして管理するのに対し、クラスタは複数のノードプールをまとめて管理するものです。
+
     const seed = 42;
 
+    // 乱数生成器を初期化します。これは、テストコンテキストの初期化に使用されます。
     var prng = std.rand.DefaultPrng.init(seed);
     const random = prng.random();
 
@@ -225,6 +230,8 @@ test "NodePool" {
         node_alignment: u12,
     };
 
+    // 異なるノードサイズとノードアライメントを持つノードプールをテストします。
+    // ここでは、ノードサイズとノードアライメントを変更して、ノードプールの動作が正しいことを確認します。
     inline for (.{
         Tuple{ .node_size = 8, .node_alignment = 8 },
         Tuple{ .node_size = 16, .node_alignment = 8 },
@@ -233,6 +240,8 @@ test "NodePool" {
         Tuple{ .node_size = 32, .node_alignment = 16 },
         Tuple{ .node_size = 128, .node_alignment = 16 },
     }) |tuple| {
+        // テストコンテキストを初期化し、テストを実行します。
+        // ここでは、テストコンテキストの初期化と解放、およびテストの実行を行います。
         const Context = TestContext(tuple.node_size, tuple.node_alignment);
 
         var i: u32 = 1;

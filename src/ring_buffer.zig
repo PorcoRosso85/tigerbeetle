@@ -396,92 +396,155 @@ fn test_low_level_interface(comptime Ring: type, ring: *Ring) !void {
 }
 
 test "RingBuffer: low level interface" {
+    // このテストは、RingBufferの低レベルインターフェースの動作を検証します。
+    // 配列ベースとポインタベースの2つの異なるRingBuffer実装に対して同じテストを行います。
+    // リングバッファとは、先頭と末尾がつながっているデータ構造で、先頭に要素を追加し、末尾から要素を取り出すことができます。
+
+    // 配列ベースのRingBufferを作成します。
     const ArrayRing = RingBuffer(u32, .{ .array = 2 });
     var array_ring = ArrayRing.init();
+    // 配列ベースのRingBufferに対して低レベルインターフェースのテストを実行します。
     try test_low_level_interface(ArrayRing, &array_ring);
 
+    // ポインタベースのRingBufferを作成します。
     const PointerRing = RingBuffer(u32, .slice);
     var pointer_ring = try PointerRing.init(testing.allocator, 2);
+    // テストが終了したら、ポインタベースのRingBufferを解放します。
     defer pointer_ring.deinit(testing.allocator);
+    // ポインタベースのRingBufferに対して低レベルインターフェースのテストを実行します。
     try test_low_level_interface(PointerRing, &pointer_ring);
 }
 
 test "RingBuffer: push/pop high level interface" {
+    // このテストは、RingBufferの高レベルインターフェースの動作を検証します。
+    // pushとpop操作を使用して、RingBufferが正しく動作することを確認します。
+
+    // RingBufferを初期化します。
     var fifo = RingBuffer(u32, .{ .array = 3 }).init();
 
+    // 初期状態のRingBufferが空であることを確認します。
     try testing.expect(!fifo.full());
     try testing.expect(fifo.empty());
     try testing.expectEqual(@as(?*u32, null), fifo.get_ptr(0));
     try testing.expectEqual(@as(?*u32, null), fifo.get_ptr(1));
     try testing.expectEqual(@as(?*u32, null), fifo.get_ptr(2));
 
+    // 値をpushし、正しく追加されたことを確認します。
     try fifo.push(1);
     try testing.expectEqual(@as(?u32, 1), fifo.head());
     try testing.expectEqual(@as(u32, 1), fifo.get_ptr(0).?.*);
     try testing.expectEqual(@as(?*u32, null), fifo.get_ptr(1));
 
+    // RingBufferがまだ満杯でないことを確認します。
     try testing.expect(!fifo.full());
     try testing.expect(!fifo.empty());
 
+    // さらに値をpushし、正しく追加されたことを確認します。
     try fifo.push(2);
     try testing.expectEqual(@as(?u32, 1), fifo.head());
     try testing.expectEqual(@as(u32, 2), fifo.get_ptr(1).?.*);
 
+    // RingBufferが満杯になるまで値をpushします。
     try fifo.push(3);
     try testing.expectError(error.NoSpaceLeft, fifo.push(4));
 
+    // RingBufferが満杯であることを確認します。
     try testing.expect(fifo.full());
     try testing.expect(!fifo.empty());
 
+    // 値をpopし、正しく取り出されたことを確認します。
     try testing.expectEqual(@as(?u32, 1), fifo.head());
     try testing.expectEqual(@as(?u32, 1), fifo.pop());
     try testing.expectEqual(@as(u32, 2), fifo.get_ptr(0).?.*);
     try testing.expectEqual(@as(u32, 3), fifo.get_ptr(1).?.*);
     try testing.expectEqual(@as(?*u32, null), fifo.get_ptr(2));
 
+    // RingBufferがまだ満杯でないことを確認します。
     try testing.expect(!fifo.full());
     try testing.expect(!fifo.empty());
 
+    // さらに値をpushします。
     try fifo.push(4);
 
+    // 全ての値をpopし、最後にはRingBufferが空になることを確認します。
     try testing.expectEqual(@as(?u32, 2), fifo.pop());
     try testing.expectEqual(@as(?u32, 3), fifo.pop());
     try testing.expectEqual(@as(?u32, 4), fifo.pop());
     try testing.expectEqual(@as(?u32, null), fifo.pop());
 
+    // 最終的にRingBufferが空であることを確認します。
     try testing.expect(!fifo.full());
     try testing.expect(fifo.empty());
 }
 
 test "RingBuffer: pop_tail" {
+    // このテストは、RingBufferのpop_tail操作の動作を検証します。
+    // pop_tail操作を使用して、RingBufferから末尾の要素を正しく取り出すことができることを確認します。
+
+    // RingBufferを初期化します。
     var lifo = RingBuffer(u32, .{ .array = 3 }).init();
+
+    // 値をpushします。
     try lifo.push(1);
     try lifo.push(2);
     try lifo.push(3);
+
+    // RingBufferが満杯であることを確認します。
     try testing.expect(lifo.full());
 
+    // pop_tail操作を使用して、末尾の要素を取り出します。
     try testing.expectEqual(@as(?u32, 3), lifo.pop_tail());
+
+    // 先頭の要素が正しいことを確認します。
     try testing.expectEqual(@as(?u32, 1), lifo.head());
+
+    // さらにpop_tail操作を使用して、末尾の要素を取り出します。
     try testing.expectEqual(@as(?u32, 2), lifo.pop_tail());
+
+    // 先頭の要素が正しいことを確認します。
     try testing.expectEqual(@as(?u32, 1), lifo.head());
+
+    // 最後の要素をpop_tail操作で取り出します。
     try testing.expectEqual(@as(?u32, 1), lifo.pop_tail());
+
+    // これ以上要素がないことを確認します。
     try testing.expectEqual(@as(?u32, null), lifo.pop_tail());
+
+    // 最終的にRingBufferが空であることを確認します。
     try testing.expect(lifo.empty());
 }
 
 test "RingBuffer: push_head" {
+    // このテストは、RingBufferのpush_head操作の動作を検証します。
+    // push_head操作を使用して、RingBufferの先頭に要素を正しく追加できることを確認します。
+
+    // RingBufferを初期化します。
     var ring = RingBuffer(u32, .{ .array = 3 }).init();
+
+    // push_head操作を使用して、RingBufferの先頭に要素を追加します。
     try ring.push_head(1);
+    // push操作を使用して、RingBufferの末尾に要素を追加します。
     try ring.push(2);
+    // 再度push_head操作を使用して、RingBufferの先頭に要素を追加します。
     try ring.push_head(3);
+
+    // RingBufferが満杯であることを確認します。
     try testing.expect(ring.full());
 
+    // pop操作を使用して、RingBufferから要素を取り出します。
+    // 先頭に追加した要素が正しく取り出されることを確認します。
     try testing.expectEqual(@as(?u32, 3), ring.pop());
     try testing.expectEqual(@as(?u32, 1), ring.pop());
     try testing.expectEqual(@as(?u32, 2), ring.pop());
+
+    // 最終的にRingBufferが空であることを確認します。
     try testing.expect(ring.empty());
 }
 
 test "RingBuffer: count_max=0" {
+    // このテストは、最大要素数が0のRingBufferの動作を検証します。
+    // 最大要素数が0の場合でも、RingBufferが正しく初期化され、エラーなく全ての宣言を参照できることを確認します。
+
+    // 最大要素数が0のRingBufferを初期化し、全ての宣言を参照します。
     std.testing.refAllDecls(RingBuffer(u32, .{ .array = 0 }));
 }

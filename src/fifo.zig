@@ -105,6 +105,9 @@ pub fn FIFO(comptime T: type) type {
 }
 
 test "FIFO: push/pop/peek/remove/empty" {
+    // このテストは、FIFO (First In, First Out) の基本的な動作を検証します。
+    // push, pop, peek, remove, empty の各メソッドが期待通りに動作することを確認します。
+
     const testing = @import("std").testing;
 
     const Foo = struct { next: ?*@This() = null };
@@ -114,15 +117,20 @@ test "FIFO: push/pop/peek/remove/empty" {
     var three: Foo = .{};
 
     var fifo: FIFO(Foo) = .{ .name = null };
+    // FIFOが空であることを確認します。
     try testing.expect(fifo.empty());
 
+    // 要素を追加し、FIFOが空でないことを確認します。
     fifo.push(&one);
     try testing.expect(!fifo.empty());
+    // FIFOの先頭要素が正しいことを確認します。
     try testing.expectEqual(@as(?*Foo, &one), fifo.peek());
+    // FIFOが特定の要素を含むことを確認します。
     try testing.expect(fifo.contains(&one));
     try testing.expect(!fifo.contains(&two));
     try testing.expect(!fifo.contains(&three));
 
+    // 複数の要素を追加し、それらがFIFOに含まれていることを確認します。
     fifo.push(&two);
     fifo.push(&three);
     try testing.expect(!fifo.empty());
@@ -131,6 +139,7 @@ test "FIFO: push/pop/peek/remove/empty" {
     try testing.expect(fifo.contains(&two));
     try testing.expect(fifo.contains(&three));
 
+    // 要素を削除し、その結果を確認します。
     fifo.remove(&one);
     try testing.expect(!fifo.empty());
     try testing.expectEqual(@as(?*Foo, &two), fifo.pop());
@@ -141,13 +150,17 @@ test "FIFO: push/pop/peek/remove/empty" {
     try testing.expect(!fifo.contains(&two));
     try testing.expect(!fifo.contains(&three));
 
+    // さらに様々なシナリオで要素の追加と削除を行い、その結果を確認します。
     fifo.push(&one);
     fifo.push(&two);
     fifo.push(&three);
     fifo.remove(&two);
+    // FIFOが空でないことを確認します。
     try testing.expect(!fifo.empty());
+    // FIFOから要素を取り出し、その要素が期待通りであることを確認します。
     try testing.expectEqual(@as(?*Foo, &one), fifo.pop());
     try testing.expectEqual(@as(?*Foo, &three), fifo.pop());
+    // FIFOから要素を全て取り出した後、FIFOが空であることを確認します。
     try testing.expectEqual(@as(?*Foo, null), fifo.pop());
     try testing.expect(fifo.empty());
 
